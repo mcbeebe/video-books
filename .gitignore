@@ -12,6 +12,9 @@ coverage/
 # Generated render artifacts (per WCAP_Architecture_v1.md §4)
 output/
 
+# Content-addressable cache for stills / clips / narration (per WCAP_Architecture_v1.md §6.3-§6.5)
+cache/
+
 # OS / editor
 .DS_Store
 .idea/

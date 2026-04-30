@@ -39,47 +39,82 @@ export interface OrchestratorDeps {
   imageModel: string;
   narrationVoiceId: string;
   narrationModel: string;
+  /**
+   * Probe a cached audio file for its actual duration in seconds. Used by the
+   * two-pass orchestrator to size video clips to *measured* audio length
+   * (ElevenLabs reads faster than authored `beat.sec` estimates). When omitted
+   * the orchestrator falls back to authored `beat.sec` — useful for tests
+   * that don't ship ffprobe.
+   */
+  probeAudioDurationSec?: (path: string) => Promise<number>;
   /** Optional progress callback — called after each generated artifact. */
   onProgress?: (event: ProgressEvent) => void;
 }
 
 export type ProgressEvent =
   | { kind: 'image'; sceneN: number; cached: boolean }
-  | { kind: 'video'; sceneN: number; cached: boolean; provider: string }
-  | { kind: 'narration'; beatId: string; cached: boolean };
+  | { kind: 'video'; sceneN: number; cached: boolean; provider: string; durationSec: number }
+  | { kind: 'narration'; beatId: string; cached: boolean; durationSec: number };
 
 export interface Artifacts {
   imagePathFor(scene: Scene): string;
   clipPathFor(scene: Scene): string;
   audioPathFor(beat: Beat): string;
+  /** Measured (ffprobe) or fallback (authored `beat.sec`) duration for each beat. */
+  audioDurationSecFor(beat: Beat): number;
+  /** Measured-audio sum for the scene — what was passed to the video client as `durationSec`. */
+  clipDurationSecFor(scene: Scene): number;
 }
 
 /**
  * Generate (or fetch from cache) every still, clip, and narration audio for a
- * chapter spec. Architecture §6.3-§6.5. Returns the artifact-path lookup
- * functions consumed by the assembler's `buildTimeline`.
+ * chapter spec. Architecture §6.3-§6.5.
  *
- * Concurrency is intentionally simple: scenes processed sequentially; within
- * a scene, image-gen → video-gen sequentially; narration is sequential
- * across all beats (architecture §6.5 — voice consistency).
+ * Two-pass design (architecture deviation worth flagging):
+ *
+ *   Pass 1: narration first, sequential per voice (architecture §6.5). After
+ *           each beat we probe the cached MP3 to learn its *actual* duration —
+ *           ElevenLabs reads at its own pace, not the authored `beat.sec`.
+ *   Pass 2: per scene → image → video. Video duration is set to the sum of
+ *           the scene's measured beat audio, not the authored sum, so the
+ *           assembled MP4 has video continuously aligned with what is
+ *           actually being said.
+ *
+ * Returned `Artifacts` exposes both path lookups and the measured durations
+ * the assembler needs to build the filter graph.
  */
 export async function generateArtifacts(
   spec: ChapterSpec,
   deps: OrchestratorDeps,
 ): Promise<Artifacts> {
-  for (const scene of spec.scenes) {
-    await ensureImage(scene, deps);
-    await ensureVideo(scene, deps);
-  }
+  const audioDurations = new Map<string, number>();
+
   for (const scene of spec.scenes) {
     for (const beat of scene.beats) {
       await ensureNarration(beat, deps);
+      const path = deps.cache.pathFor('audio', narrationKey(beat, deps), 'mp3');
+      const measured = deps.probeAudioDurationSec
+        ? await deps.probeAudioDurationSec(path)
+        : beat.sec;
+      audioDurations.set(beat.id, measured);
     }
   }
+
+  const clipDurations = new Map<number, number>();
+  for (const scene of spec.scenes) {
+    await ensureImage(scene, deps);
+    const sceneSec = sumSceneAudio(scene, audioDurations);
+    clipDurations.set(scene.n, sceneSec);
+    await ensureVideo(scene, sceneSec, deps);
+  }
+
   return {
     imagePathFor: (s) => deps.cache.pathFor('images', imageKey(s, deps), 'png'),
-    clipPathFor: (s) => deps.cache.pathFor('clips', clipKey(s, deps), 'mp4'),
+    clipPathFor: (s) =>
+      deps.cache.pathFor('clips', clipKey(s, sumSceneAudio(s, audioDurations), deps), 'mp4'),
     audioPathFor: (b) => deps.cache.pathFor('audio', narrationKey(b, deps), 'mp3'),
+    audioDurationSecFor: (b) => audioDurations.get(b.id) ?? b.sec,
+    clipDurationSecFor: (s) => clipDurations.get(s.n) ?? sumSceneAudio(s, audioDurations),
   };
 }
 
@@ -94,12 +129,15 @@ async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> 
   deps.onProgress?.({ kind: 'image', sceneN: scene.n, cached: false });
 }
 
-async function ensureVideo(scene: Scene, deps: OrchestratorDeps): Promise<void> {
+async function ensureVideo(
+  scene: Scene,
+  durationSec: number,
+  deps: OrchestratorDeps,
+): Promise<void> {
   const provider = deps.pickProvider(scene);
-  const durationSec = sceneDurationSec(scene);
-  const key = clipKey(scene, deps);
+  const key = clipKey(scene, durationSec, deps);
   if (await deps.cache.has('clips', key, 'mp4')) {
-    deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: true, provider });
+    deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: true, provider, durationSec });
     return;
   }
   const image = await deps.cache.get('images', imageKey(scene, deps), 'png');
@@ -111,43 +149,39 @@ async function ensureVideo(scene: Scene, deps: OrchestratorDeps): Promise<void> 
     durationSec,
   });
   await deps.cache.set('clips', key, 'mp4', video);
-  deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: false, provider });
+  deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: false, provider, durationSec });
 }
 
 async function ensureNarration(beat: Beat, deps: OrchestratorDeps): Promise<void> {
   const key = narrationKey(beat, deps);
   if (await deps.cache.has('audio', key, 'mp3')) {
-    deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: true });
+    deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: true, durationSec: beat.sec });
     return;
   }
   const { audio } = await deps.narrationClient.generate(beat.text);
   await deps.cache.set('audio', key, 'mp3', audio);
-  deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: false });
+  deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: false, durationSec: beat.sec });
 }
 
 function imageKey(scene: Scene, deps: OrchestratorDeps): string {
   return deriveKey(scene.image, deps.styleAnchor, deps.imageProvider, deps.imageModel);
 }
 
-function clipKey(scene: Scene, deps: OrchestratorDeps): string {
-  // durationSec is part of the key: same image + motion + provider with a
-  // different requested length is a different clip (provider may render
-  // differently and the output bytes will differ). Architecture §6.4
-  // originally specified `(imageHash + motion + provider)` only — adding
-  // duration is a deviation that keeps the cache content-addressable.
+function clipKey(scene: Scene, durationSec: number, deps: OrchestratorDeps): string {
+  // durationSec (rounded) is part of the key: same image+motion+provider with
+  // a different requested length is a different clip.
   return deriveKey(
     imageKey(scene, deps),
     scene.motion,
     deps.pickProvider(scene),
-    sceneDurationSec(scene).toString(),
+    durationSec.toFixed(2),
   );
-}
-
-/** Total clip duration for a scene = sum of its beat seconds. */
-function sceneDurationSec(scene: Scene): number {
-  return scene.beats.reduce((sum, b) => sum + b.sec, 0);
 }
 
 function narrationKey(beat: Beat, deps: OrchestratorDeps): string {
   return deriveKey(beat.text, deps.narrationVoiceId, deps.narrationModel);
+}
+
+function sumSceneAudio(scene: Scene, audioDurations: Map<string, number>): number {
+  return scene.beats.reduce((sum, b) => sum + (audioDurations.get(b.id) ?? b.sec), 0);
 }
