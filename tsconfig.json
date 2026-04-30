@@ -6,6 +6,7 @@
     { "path": "./packages/cache" },
     { "path": "./packages/http-utils" },
     { "path": "./packages/narration" },
-    { "path": "./packages/image-gen" }
+    { "path": "./packages/image-gen" },
+    { "path": "./packages/video-gen" }
   ]
 }
