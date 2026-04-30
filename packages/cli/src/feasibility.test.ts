@@ -28,7 +28,7 @@ describe('checkClipFeasibility', () => {
     expect(report.issues).toEqual([]);
   });
 
-  it('flags HERO scenes whose total exceeds veo max (8s)', () => {
+  it('flags HERO scenes whose total exceeds veo max (8s) when routed to veo', () => {
     const spec: ChapterSpec = {
       ...validChapterSpec,
       scenes: [
@@ -43,7 +43,8 @@ describe('checkClipFeasibility', () => {
         },
       ],
     };
-    const report = checkClipFeasibility(spec, pickProvider);
+    // Default router is kling-only (max 15s, fits 14); use a custom veo router to exercise the veo limit.
+    const report = checkClipFeasibility(spec, () => 'veo');
     expect(report.ok).toBe(false);
     expect(report.issues).toEqual([
       { sceneN: 1, sceneType: 'HERO', provider: 'veo', totalSec: 14, maxSec: 8, overSec: 6 },
@@ -70,13 +71,13 @@ describe('checkClipFeasibility', () => {
     expect(report.issues[0]).toMatchObject({ provider: 'kling', totalSec: 18, overSec: 3 });
   });
 
-  it('flags multiple bad scenes, leaves good ones alone', () => {
+  it('flags multiple bad scenes, leaves good ones alone (mixed router)', () => {
     const spec: ChapterSpec = {
       ...validChapterSpec,
       scenes: [
-        // Good — fits kling
+        // Good — fits whichever
         { ...validScene, n: 1, type: 'SCENE', beats: [{ ...validBeat, id: '1.1', sec: 5 }] },
-        // Bad — over veo max
+        // Bad — over veo max (12s vs 8)
         {
           ...validScene,
           n: 2,
@@ -88,7 +89,7 @@ describe('checkClipFeasibility', () => {
         },
         // Good — fits veo (8s exactly)
         { ...validScene, n: 3, type: 'HERO', beats: [{ ...validBeat, id: '3.1', sec: 8 }] },
-        // Bad — over kling max
+        // Bad — over kling max (16s vs 15)
         {
           ...validScene,
           n: 4,
@@ -97,8 +98,28 @@ describe('checkClipFeasibility', () => {
         },
       ],
     };
-    const report = checkClipFeasibility(spec, pickProvider);
+    // Mixed router: HEROs to veo (max 8), SCENEs to kling (max 15).
+    const report = checkClipFeasibility(spec, (s) => (s.type === 'HERO' ? 'veo' : 'kling'));
     expect(report.issues.map((i) => i.sceneN)).toEqual([2, 4]);
+  });
+
+  it('default kling-only router accepts ≤15s scenes that veo would reject', () => {
+    // 14s HERO scene fits kling (max 15) but would have failed veo (max 8).
+    const spec: ChapterSpec = {
+      ...validChapterSpec,
+      scenes: [
+        {
+          ...validScene,
+          n: 1,
+          type: 'HERO',
+          beats: [
+            { ...validBeat, id: '1.1', sec: 8 },
+            { ...validBeat, id: '1.2', sec: 6 },
+          ],
+        },
+      ],
+    };
+    expect(checkClipFeasibility(spec, pickProvider).ok).toBe(true);
   });
 
   it('respects a custom router that picks a different provider per scene', () => {
