@@ -93,7 +93,7 @@ describe('createVideoClient.generate', () => {
     expect(capturedBody.image_url).toMatch(/^data:image\/png;base64,/);
   });
 
-  it('honors provider bodyExtras (e.g. veo with_audio)', async () => {
+  it('honors provider bodyExtras (custom provider config)', async () => {
     let body: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
       if (init?.method === 'POST') {
@@ -105,10 +105,19 @@ describe('createVideoClient.generate', () => {
     const client = createVideoClient({
       apiKey: 'k',
       defaultProvider: 'kling',
+      providers: {
+        kling: {
+          name: 'kling',
+          modelPath: 'fal-ai/kling-test',
+          defaultDurationSec: 5,
+          bodyExtras: { custom_flag: true, quality: 'high' },
+        },
+      },
       fetch: fetchImpl,
     });
-    await client.generate({ image: 'https://i', motion: 'm', provider: 'veo' });
-    expect(body.with_audio).toBe(false);
+    await client.generate({ image: 'https://i', motion: 'm' });
+    expect(body.custom_flag).toBe(true);
+    expect(body.quality).toBe('high');
   });
 
   it('uses provider default duration; per-call override wins', async () => {
