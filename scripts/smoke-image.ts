@@ -39,9 +39,12 @@ async function main(): Promise<void> {
   for (const scene of spec.scenes) {
     console.log(`[scene ${scene.n.toString()}] ${scene.image.slice(0, 60)}…`);
     const t = Date.now();
-    const { image, sourceUrl, width, height, requestId } = await client.generate(scene.image);
+    const { image, sourceUrl, width, height, requestId, contentType } = await client.generate(
+      scene.image,
+    );
     const ms = Date.now() - t;
-    const outPath = join(outDir, `${scene.n.toString().padStart(3, '0')}.png`);
+    const ext = extForContentType(contentType);
+    const outPath = join(outDir, `${scene.n.toString().padStart(3, '0')}.${ext}`);
     await writeFile(outPath, image);
     console.log(
       `  → ${outPath} (${(image.length / 1024).toFixed(1)} KB, ${(width ?? 0).toString()}×${(height ?? 0).toString()}, ${ms.toString()}ms, req=${requestId ?? 'n/a'})`,
@@ -49,6 +52,13 @@ async function main(): Promise<void> {
     console.log(`    src: ${sourceUrl}`);
   }
   console.log(`✓ wrote image smoke samples to ${outDir}`);
+}
+
+function extForContentType(contentType: string): string {
+  const lower = contentType.toLowerCase();
+  if (lower.includes('jpeg') || lower.includes('jpg')) return 'jpg';
+  if (lower.includes('webp')) return 'webp';
+  return 'png';
 }
 
 main().catch((err: unknown) => {
