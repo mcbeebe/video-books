@@ -106,6 +106,41 @@ describe('generateArtifacts', () => {
     expect(calls.map((c) => (c[0] as { provider: string }).provider)).toEqual(['kling', 'veo']);
   });
 
+  it('passes scene total beat duration as the requested clip durationSec', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir);
+    await generateArtifacts(threeSceneSpec, deps);
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    // threeSceneSpec scene 1 = 5s (one beat), scene 2 = 7+4 = 11s
+    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([5, 11]);
+  });
+
+  it('clip cache key changes when scene beat duration changes', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir);
+    const artifacts1 = await generateArtifacts(threeSceneSpec, deps);
+
+    // Same image prompt + motion + provider, but different total beat seconds → different key.
+    const longerSpec = {
+      ...threeSceneSpec,
+      scenes: [
+        {
+          ...threeSceneSpec.scenes[0]!,
+          beats: [{ ...threeSceneSpec.scenes[0]!.beats[0]!, sec: 9 }], // was 5
+        },
+        threeSceneSpec.scenes[1]!,
+      ],
+    };
+    const events2: ProgressEvent[] = [];
+    const deps2 = makeDeps(events2, dir);
+    const artifacts2 = await generateArtifacts(longerSpec, deps2);
+
+    const sceneA = threeSceneSpec.scenes[0]!;
+    const sceneB = longerSpec.scenes[0]!;
+    expect(artifacts1.clipPathFor(sceneA)).not.toBe(artifacts2.clipPathFor(sceneB));
+  });
+
   it('appends styleAnchor to the image prompt', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir);

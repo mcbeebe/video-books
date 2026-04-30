@@ -7,6 +7,8 @@ export interface VideoGenerator {
     image: Uint8Array;
     motion: string;
     provider?: 'kling' | 'seedance' | 'veo';
+    /** Requested clip length in seconds (provider may coerce/clamp). */
+    durationSec?: number;
   }): Promise<{ video: Uint8Array }>;
 }
 
@@ -20,7 +22,7 @@ export interface NarrationGenerator {
   generate(text: string): Promise<{ audio: Uint8Array }>;
 }
 
-/** Picks the video provider for a scene (default: HERO → veo, else → kling). */
+/** Picks the video provider for a scene (default: kling for everything — see `pickProvider` in @video-books/video-gen). */
 export type ProviderRouter = (scene: Pick<Scene, 'type'>) => 'kling' | 'seedance' | 'veo';
 
 /** External dependencies — fully injected so the orchestrator is unit-testable. */
@@ -94,6 +96,7 @@ async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> 
 
 async function ensureVideo(scene: Scene, deps: OrchestratorDeps): Promise<void> {
   const provider = deps.pickProvider(scene);
+  const durationSec = sceneDurationSec(scene);
   const key = clipKey(scene, deps);
   if (await deps.cache.has('clips', key, 'mp4')) {
     deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: true, provider });
@@ -101,7 +104,12 @@ async function ensureVideo(scene: Scene, deps: OrchestratorDeps): Promise<void> 
   }
   const image = await deps.cache.get('images', imageKey(scene, deps), 'png');
   if (image === null) throw new Error(`expected cached image for scene ${scene.n.toString()}`);
-  const { video } = await deps.videoClient.generate({ image, motion: scene.motion, provider });
+  const { video } = await deps.videoClient.generate({
+    image,
+    motion: scene.motion,
+    provider,
+    durationSec,
+  });
   await deps.cache.set('clips', key, 'mp4', video);
   deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: false, provider });
 }
@@ -122,7 +130,22 @@ function imageKey(scene: Scene, deps: OrchestratorDeps): string {
 }
 
 function clipKey(scene: Scene, deps: OrchestratorDeps): string {
-  return deriveKey(imageKey(scene, deps), scene.motion, deps.pickProvider(scene));
+  // durationSec is part of the key: same image + motion + provider with a
+  // different requested length is a different clip (provider may render
+  // differently and the output bytes will differ). Architecture §6.4
+  // originally specified `(imageHash + motion + provider)` only — adding
+  // duration is a deviation that keeps the cache content-addressable.
+  return deriveKey(
+    imageKey(scene, deps),
+    scene.motion,
+    deps.pickProvider(scene),
+    sceneDurationSec(scene).toString(),
+  );
+}
+
+/** Total clip duration for a scene = sum of its beat seconds. */
+function sceneDurationSec(scene: Scene): number {
+  return scene.beats.reduce((sum, b) => sum + b.sec, 0);
 }
 
 function narrationKey(beat: Beat, deps: OrchestratorDeps): string {
