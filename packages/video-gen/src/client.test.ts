@@ -74,11 +74,11 @@ describe('createVideoClient.generate', () => {
     expect(capturedUrl).toContain('fal-ai/veo3');
   });
 
-  it('encodes Uint8Array image as data URL in the body', async () => {
-    let capturedBody: { image_url: string } = { image_url: '' };
+  it('encodes Uint8Array image as data URL in the body (kling uses start_image_url)', async () => {
+    let capturedBody: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
       if (init?.method === 'POST') {
-        capturedBody = JSON.parse(String(init.body)) as { image_url: string };
+        capturedBody = JSON.parse(String(init.body)) as Record<string, unknown>;
         return jsonOk({ video: { url: 'https://cdn/x.mp4' } });
       }
       return mp4Ok();
@@ -90,7 +90,65 @@ describe('createVideoClient.generate', () => {
     });
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     await client.generate({ image: png, motion: 'm' });
-    expect(capturedBody.image_url).toMatch(/^data:image\/png;base64,/);
+    expect(capturedBody.start_image_url).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it('formats per-provider request body shape', async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      if (init?.method === 'POST') {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return jsonOk({ video: { url: 'https://cdn/x.mp4' } });
+      }
+      return mp4Ok();
+    };
+    const client = createVideoClient({
+      apiKey: 'k',
+      defaultProvider: 'kling',
+      fetch: fetchImpl,
+    });
+
+    // kling: start_image_url + duration as stringified integer
+    await client.generate({ image: 'https://i', motion: 'm', provider: 'kling', durationSec: 7 });
+    expect(body.start_image_url).toBe('https://i');
+    expect(body.duration).toBe('7');
+
+    // seedance: image_url + duration as stringified integer
+    await client.generate({
+      image: 'https://i',
+      motion: 'm',
+      provider: 'seedance',
+      durationSec: 5,
+    });
+    expect(body.image_url).toBe('https://i');
+    expect(body.duration).toBe('5');
+
+    // veo: image_url + duration with `s` suffix, rounded up to 4/6/8
+    await client.generate({ image: 'https://i', motion: 'm', provider: 'veo', durationSec: 5 });
+    expect(body.image_url).toBe('https://i');
+    expect(body.duration).toBe('6s');
+  });
+
+  it('veo rounds duration up to nearest valid (4/6/8)', async () => {
+    let body: Record<string, unknown> = {};
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      if (init?.method === 'POST') {
+        body = JSON.parse(String(init.body)) as Record<string, unknown>;
+        return jsonOk({ video: { url: 'https://cdn/x.mp4' } });
+      }
+      return mp4Ok();
+    };
+    const client = createVideoClient({
+      apiKey: 'k',
+      defaultProvider: 'veo',
+      fetch: fetchImpl,
+    });
+    await client.generate({ image: 'https://i', motion: 'm', durationSec: 3 });
+    expect(body.duration).toBe('4s');
+    await client.generate({ image: 'https://i', motion: 'm', durationSec: 7 });
+    expect(body.duration).toBe('8s');
+    await client.generate({ image: 'https://i', motion: 'm', durationSec: 99 });
+    expect(body.duration).toBe('8s'); // clamped
   });
 
   it('honors provider bodyExtras (custom provider config)', async () => {
@@ -120,7 +178,7 @@ describe('createVideoClient.generate', () => {
     expect(body.quality).toBe('high');
   });
 
-  it('uses provider default duration; per-call override wins', async () => {
+  it('uses provider default duration; per-call override wins (kling stringified)', async () => {
     let body: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
       if (init?.method === 'POST') {
@@ -135,9 +193,9 @@ describe('createVideoClient.generate', () => {
       fetch: fetchImpl,
     });
     await client.generate({ image: 'https://i', motion: 'm' });
-    expect(body.duration).toBe(5);
+    expect(body.duration).toBe('5'); // kling default 5s, stringified
     await client.generate({ image: 'https://i', motion: 'm', durationSec: 10 });
-    expect(body.duration).toBe(10);
+    expect(body.duration).toBe('10');
   });
 
   it('parses videos[] array form when video object missing', async () => {

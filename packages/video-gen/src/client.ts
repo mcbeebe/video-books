@@ -135,12 +135,14 @@ async function callOnce(
   p: CallParams,
 ): Promise<{ ok: true; result: VideoResult } | { ok: false; error: VideoError }> {
   const submitUrl = `${p.baseUrl}/${p.provider.modelPath}`;
-  const body: Record<string, unknown> = {
-    image_url: p.imageUrl,
-    prompt: p.motion,
-    duration: p.durationSec,
-    ...p.provider.bodyExtras,
-  };
+  const formatted = p.provider.formatRequest
+    ? p.provider.formatRequest({
+        imageUrl: p.imageUrl,
+        prompt: p.motion,
+        durationSec: p.durationSec,
+      })
+    : { image_url: p.imageUrl, prompt: p.motion, duration: p.durationSec };
+  const body: Record<string, unknown> = { ...formatted, ...p.provider.bodyExtras };
 
   const submit = await fetchImpl(submitUrl, {
     method: 'POST',

@@ -7,6 +7,7 @@ export {
   VideoApiError,
   type VideoClient,
   type VideoError,
+  type VideoFormatRequestInput,
   type VideoGenerateInput,
   type VideoProviderConfig,
   type VideoProviderName,

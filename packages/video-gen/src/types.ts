@@ -53,14 +53,30 @@ export interface VideoGenerateInput {
 /** Names of the providers shipped with this package. Add more by extending the registry. */
 export type VideoProviderName = 'kling' | 'seedance' | 'veo';
 
+/** Inputs the client passes to the provider's request formatter. */
+export interface VideoFormatRequestInput {
+  imageUrl: string;
+  prompt: string;
+  durationSec: number;
+}
+
 /** Static metadata + endpoint config for one provider. */
 export interface VideoProviderConfig {
   /** Display name used in cache keys + logs. */
   name: VideoProviderName;
   /** Provider model path appended to baseUrl (fal.ai-style). */
   modelPath: string;
-  /** Default clip duration. */
+  /** Default clip duration (seconds). The provider's formatRequest may coerce. */
   defaultDurationSec: number;
+  /**
+   * Translate the orchestrator's neutral request shape into the body fields
+   * the provider's API actually expects. fal.ai providers diverge on field
+   * names (Kling wants `start_image_url`, others want `image_url`) and on
+   * duration encoding (Veo wants `"6s"`, Kling/Seedance want `"6"`).
+   *
+   * Defaults to `{ image_url, prompt, duration: durationSec }` if omitted.
+   */
+  formatRequest?: (input: VideoFormatRequestInput) => Record<string, unknown>;
   /** Provider-specific extra body params (constant per provider). */
   bodyExtras?: Record<string, unknown>;
   /**
