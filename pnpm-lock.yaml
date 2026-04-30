@@ -36,6 +36,15 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.17)
 
+  packages/chapter-parser:
+    dependencies:
+      '@video-books/types':
+        specifier: workspace:*
+        version: link:../types
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+
   packages/types:
     dependencies:
       zod:
