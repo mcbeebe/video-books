@@ -41,4 +41,14 @@ export default tseslint.config(
     },
     ...tseslint.configs.disableTypeChecked,
   },
+  {
+    // Test stubs frequently return synchronously from async signatures (mock fetches,
+    // sleep stubs) and stringify mocked URL/body objects we just wrote — both rules
+    // produce more noise than signal in test code.
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+    },
+  },
 );

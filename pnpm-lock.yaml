@@ -47,6 +47,8 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/narration: {}
+
   packages/types:
     dependencies:
       zod:

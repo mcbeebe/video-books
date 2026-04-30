@@ -3,6 +3,7 @@
   "references": [
     { "path": "./packages/types" },
     { "path": "./packages/chapter-parser" },
-    { "path": "./packages/cache" }
+    { "path": "./packages/cache" },
+    { "path": "./packages/narration" }
   ]
 }
