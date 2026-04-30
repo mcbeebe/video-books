@@ -145,19 +145,26 @@ API keys live in `.env`, **never committed**. Validated at startup via Zod.
 
 ## Phase 1 task list (pilot)
 
-Track progress in `CHANGELOG.md` (when created). Each completed item gets a dated line.
+Track progress in `CHANGELOG.md`. Each completed item gets a dated line.
 
-1. [ ] Bootstrap repo: pnpm workspace, tsconfig.base.json, eslint, vitest, GitHub Actions CI green on hello-world. ← **in progress**
-2. [ ] `packages/types`: Zod schemas + TS types for `Beat`, `Scene`, `ChapterSpec`. Tested against fixture.
-3. [ ] `packages/chapter-parser`: read JSON, validate, return typed object.
-4. [ ] `packages/cache`: content-addressable filesystem cache (get/set/has, with hash key derivation).
-5. [ ] `packages/narration`: ElevenLabs client. Smoke test on scenes 1, 58, 86 (the user wants to compare voices).
-6. [ ] `packages/image-gen`: Midjourney client. Smoke test on 5 scenes; review with user before bulk gen.
-7. [ ] `packages/video-gen`: Kling client. Smoke test on 3 scenes.
-8. [ ] `packages/assembler`: FFmpeg invocation wrappers (concat clips, mix audio, master output).
-9. [ ] `packages/cli`: `wcap` command wiring (`render`, `generate`, `validate`, `cost`).
-10. [ ] End-to-end test: 3-scene fixture chapter rendered start to finish.
-11. [ ] First real run: full Chapter 6 spec → all 137 stills generated and reviewed.
+1. [x] Bootstrap repo: pnpm workspace, tsconfig.base.json, eslint, vitest, GitHub Actions CI green on hello-world. (PR #1)
+2. [x] `packages/types`: Zod schemas + TS types for `Beat`, `Scene`, `ChapterSpec`. (PR #2)
+3. [x] `packages/chapter-parser`: read JSON, validate, return typed object. (PR #3)
+4. [x] `packages/cache`: content-addressable filesystem cache (get/set/has, with hash key derivation). (PR #4)
+5. [x] `packages/narration`: ElevenLabs client (code only — voice-comparison smoke test on scenes 1, 58, 86 pending; needs `ELEVENLABS_API_KEY`). (PR #5)
+6. [x] `packages/image-gen`: fal.ai-shaped image client (code only — 5-scene smoke pending; needs `FAL_KEY`). (PR #6)
+7. [x] `packages/video-gen`: provider-routed video client (kling / seedance / veo) (code only — smoke pending). (PR #7)
+8. [x] `packages/assembler`: FFmpeg invocation wrappers — timeline + filter graph + verifyOutput. (PR #8)
+9. [x] `packages/cli`: `wcap` command (`render`, `validate`, `cost`). (PR #9 + #10)
+10. [x] End-to-end test: 3-scene fixture chapter rendered start to finish (against mock providers). (PR #10)
+11. [ ] First real run: full Chapter 6 spec → all 137 stills generated and reviewed. **(awaits user — needs Chapter 6 spec authored as JSON + API keys)**
+
+Smoke tests (manual; gated on API keys — see `docs/RUNBOOK.md` and `docs/API_KEYS.md`):
+
+- [ ] `pnpm tsx scripts/smoke-narration.ts content/chapters/fixture.spec.json` — verify voice quality + endpoint shape
+- [ ] `pnpm tsx scripts/smoke-image.ts content/chapters/fixture.spec.json` — review composition before bulk
+- [ ] `pnpm tsx scripts/smoke-video.ts content/chapters/fixture.spec.json` — verify motion + provider routing
+- [ ] Verify fal.ai model paths against https://fal.ai/models (slugs iterate)
 
 Mark items complete only after tests pass.
 
