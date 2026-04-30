@@ -47,6 +47,14 @@ export interface OrchestratorDeps {
    * that don't ship ffprobe.
    */
   probeAudioDurationSec?: (path: string) => Promise<number>;
+  /**
+   * Extra seconds added on top of measured scene-audio duration when sizing
+   * each clip — usually set to the xfade overlap so video covers the entire
+   * narration plus the fade tail. Combined with `Math.ceil`, this guarantees
+   * `clip duration ≥ audio duration + xfade` so audio never truncates and
+   * the fade-out happens *after* the narration ends.
+   */
+  clipPaddingSec?: number;
   /** Optional progress callback — called after each generated artifact. */
   onProgress?: (event: ProgressEvent) => void;
 }
@@ -100,22 +108,38 @@ export async function generateArtifacts(
     }
   }
 
+  const padding = deps.clipPaddingSec ?? 0;
   const clipDurations = new Map<number, number>();
   for (const scene of spec.scenes) {
     await ensureImage(scene, deps);
-    const sceneSec = sumSceneAudio(scene, audioDurations);
-    clipDurations.set(scene.n, sceneSec);
-    await ensureVideo(scene, sceneSec, deps);
+    const requestedSec = clipDurationFor(sumSceneAudio(scene, audioDurations), padding);
+    clipDurations.set(scene.n, requestedSec);
+    await ensureVideo(scene, requestedSec, deps);
   }
 
   return {
     imagePathFor: (s) => deps.cache.pathFor('images', imageKey(s, deps), 'png'),
     clipPathFor: (s) =>
-      deps.cache.pathFor('clips', clipKey(s, sumSceneAudio(s, audioDurations), deps), 'mp4'),
+      deps.cache.pathFor(
+        'clips',
+        clipKey(s, clipDurationFor(sumSceneAudio(s, audioDurations), padding), deps),
+        'mp4',
+      ),
     audioPathFor: (b) => deps.cache.pathFor('audio', narrationKey(b, deps), 'mp3'),
     audioDurationSecFor: (b) => audioDurations.get(b.id) ?? b.sec,
-    clipDurationSecFor: (s) => clipDurations.get(s.n) ?? sumSceneAudio(s, audioDurations),
+    clipDurationSecFor: (s) =>
+      clipDurations.get(s.n) ?? clipDurationFor(sumSceneAudio(s, audioDurations), padding),
   };
+}
+
+/**
+ * Compute the clip-duration we ask the provider for, given measured audio
+ * length and an xfade-padding allowance. Always rounded UP so the clip is at
+ * least as long as `audio + padding` — guarantees no audio truncation and
+ * leaves room for a fade-out that doesn't overlap the narration.
+ */
+function clipDurationFor(audioSec: number, paddingSec: number): number {
+  return Math.max(1, Math.ceil(audioSec + paddingSec));
 }
 
 async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> {

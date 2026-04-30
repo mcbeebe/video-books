@@ -153,9 +153,13 @@ export function buildFfmpegArgs(
 function buildXfadeChain(n: number, durations: number[], fadeSec: number): string[] {
   const parts: string[] = [];
 
-  // Reset PTS on every clip
+  // Pre-pass per clip: normalize to constant 30fps + yuv420p + reset PTS.
+  // xfade requires inputs to share fps, format, and SAR; provider clips can
+  // have variable framerate (especially fal.ai → kling) and that silently
+  // breaks the fade (it renders as a hard cut). Forcing fps + format here
+  // makes the fade actually visible.
   for (let i = 0; i < n; i += 1) {
-    parts.push(`[${i.toString()}:v]setpts=PTS-STARTPTS[v${i.toString()}]`);
+    parts.push(`[${i.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v${i.toString()}]`);
   }
 
   // Chain xfades. After k fades, cumulative output duration = sum(T0..Tk) - k*D

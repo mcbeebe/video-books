@@ -128,13 +128,14 @@ async function runRenderCommand(
       confirm: { type: 'boolean' },
       output: { type: 'string' },
       'cache-dir': { type: 'string' },
+      'xfade-sec': { type: 'string' },
     },
     allowPositionals: true,
   });
   const path = positionals[0];
   if (path === undefined) {
     logger.error(
-      'usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH] [--cache-dir DIR]',
+      'usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH] [--cache-dir DIR] [--xfade-sec N]',
     );
     return 1;
   }
@@ -159,6 +160,7 @@ async function runRenderCommand(
   const outputPath = values.output ?? `output/${spec.slug}.mp4`;
   const maxCostUsd = Number(values['max-cost'] ?? '50');
   const confirm = values.confirm ?? false;
+  const xfadeSec = values['xfade-sec'] !== undefined ? Number(values['xfade-sec']) : undefined;
 
   const result = await runRender(
     spec,
@@ -210,7 +212,7 @@ async function runRenderCommand(
       },
       logger,
     },
-    { outputPath, maxCostUsd, confirm },
+    { outputPath, maxCostUsd, confirm, ...(xfadeSec !== undefined ? { xfadeSec } : {}) },
   );
 
   logger.log(`Cost: $${result.cost.totalUsd.toFixed(2)}`);
