@@ -98,6 +98,11 @@ export async function runRender(
     );
   }
 
+  // xfadeSec is read first so it can be passed to the orchestrator as
+  // clipPaddingSec (each clip is sized to audio + fade so the fade-out
+  // happens after the narration ends, not over it).
+  const xfadeSec = options.xfadeSec ?? 1.5;
+
   deps.logger.log('Generating artifacts…');
   const artifacts = await generateArtifacts(spec, {
     cache: deps.cache,
@@ -110,6 +115,7 @@ export async function runRender(
     imageModel: deps.imageModel,
     narrationVoiceId: deps.narrationVoiceId,
     narrationModel: deps.narrationModel,
+    clipPaddingSec: xfadeSec,
     ...(deps.probeAudioDurationSec ? { probeAudioDurationSec: deps.probeAudioDurationSec } : {}),
     ...(deps.onProgress ? { onProgress: deps.onProgress } : {}),
   });
@@ -122,18 +128,18 @@ export async function runRender(
 
   // Use measured clip durations for both verify-expected and the xfade chain.
   const measuredClipDurations = spec.scenes.map((s) => artifacts.clipDurationSecFor(s));
-  const xfadeSec = options.xfadeSec ?? 0.5;
   const expectedOutputSec =
     measuredClipDurations.reduce((sum, d) => sum + d, 0) -
     (xfadeSec > 0 ? Math.max(0, measuredClipDurations.length - 1) * xfadeSec : 0);
 
-  const { args } = buildFfmpegArgs(timeline, {
+  const { args, filterGraph } = buildFfmpegArgs(timeline, {
     outputPath: options.outputPath,
     xfadeSec,
     clipDurationsSec: measuredClipDurations,
   });
 
-  deps.logger.log(`Encoding to ${options.outputPath}…`);
+  deps.logger.log(`Encoding to ${options.outputPath}… (xfade=${xfadeSec.toString()}s)`);
+  deps.logger.log(`  filter_complex: ${filterGraph}`);
   const { code, stderr } = await deps.runFfmpeg(args);
   if (code !== 0) {
     throw new Error(`ffmpeg exited ${code.toString()}: ${stderr}`);

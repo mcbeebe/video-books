@@ -91,6 +91,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
     const spec = await parseChapterFile(FIXTURE_PATH);
     const recorded = { ffmpegArgs: [] as string[][], ffprobePaths: [] as string[] };
     const outputPath = join(dir, 'fixture.mp4');
+    // With xfadeSec=0 the clip duration is ceil(audio + 0) = authored sum.
     const expectedSec = spec.scenes.reduce(
       (s, sc) => s + sc.beats.reduce((b, beat) => b + beat.sec, 0),
       0,
@@ -101,6 +102,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
       outputPath,
       maxCostUsd: 100,
       confirm: false,
+      xfadeSec: 0,
     });
 
     // Cost preflight:
@@ -155,6 +157,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
       outputPath: join(dir, 'x.mp4'),
       maxCostUsd: 0.01,
       confirm: true,
+      xfadeSec: 0,
     });
     expect(result.verify.ok).toBe(true);
   });
@@ -214,6 +217,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
       outputPath: join(dir, 'a.mp4'),
       maxCostUsd: 100,
       confirm: false,
+      xfadeSec: 0,
     });
 
     const deps2 = makeDeps(dir, expectedSec, recorded);
@@ -221,10 +225,31 @@ describe('runRender (e2e wiring with mock providers)', () => {
       outputPath: join(dir, 'b.mp4'),
       maxCostUsd: 100,
       confirm: false,
+      xfadeSec: 0,
     });
 
     expect(deps2.imageClient.generate).not.toHaveBeenCalled();
     expect(deps2.videoClient.generate).not.toHaveBeenCalled();
     expect(deps2.narrationClient.generate).not.toHaveBeenCalled();
+  });
+
+  it('default xfadeSec=1.5 expands clip durations with padding (verify-expected accounts for fade overlap)', async () => {
+    const spec = await parseChapterFile(FIXTURE_PATH);
+    const recorded = { ffmpegArgs: [] as string[][], ffprobePaths: [] as string[] };
+    // Fixture beats sum to 14, 7, 14. With xfadeSec=1.5 padding:
+    //   ceil(14+1.5)=16, ceil(7+1.5)=9, ceil(14+1.5)=16. Total = 41.
+    //   Minus 2 fades × 1.5s = 38s expected output.
+    const expectedSec = 38;
+    const deps = makeDeps(dir, expectedSec, recorded);
+
+    const result = await runRender(spec, deps, {
+      outputPath: join(dir, 'fixture.mp4'),
+      maxCostUsd: 100,
+      confirm: false,
+    });
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([16, 9, 16]);
+    expect(result.verify.ok).toBe(true);
   });
 });

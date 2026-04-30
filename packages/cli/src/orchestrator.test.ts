@@ -116,41 +116,53 @@ describe('generateArtifacts', () => {
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([5, 11]);
   });
 
-  it('uses probeAudioDurationSec to size video clips when injected', async () => {
+  it('uses probeAudioDurationSec to size video clips, ceil-rounded', async () => {
     const events: ProgressEvent[] = [];
-    // Stub probe: pretend every audio file is 3.5s long, regardless of authored beat.sec.
+    const deps = makeDeps(events, dir, { probeAudioDurationSec: async () => 3.5 });
+    await generateArtifacts(threeSceneSpec, deps);
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    // scene 1: ceil(3.5) = 4; scene 2: ceil(7.0) = 7
+    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([4, 7]);
+  });
+
+  it('clipPaddingSec adds to measured audio before ceiling', async () => {
+    const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir, {
       probeAudioDurationSec: async () => 3.5,
+      clipPaddingSec: 1.5, // simulates the xfade overlap
     });
     await generateArtifacts(threeSceneSpec, deps);
 
     const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
-    // scene 1 = 1 beat × 3.5 = 3.5s; scene 2 = 2 beats × 3.5 = 7s
-    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([3.5, 7]);
+    // scene 1: ceil(3.5 + 1.5) = 5; scene 2: ceil(7.0 + 1.5) = 9
+    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([5, 9]);
   });
 
-  it('Artifacts.audioDurationSecFor and clipDurationSecFor return measured values', async () => {
+  it('Artifacts.audioDurationSecFor returns measured; clipDurationSecFor returns ceil(audio+padding)', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir, {
       probeAudioDurationSec: async () => 4.2,
+      clipPaddingSec: 1.5,
     });
     const artifacts = await generateArtifacts(threeSceneSpec, deps);
 
     const beat11 = threeSceneSpec.scenes[0]!.beats[0]!;
-    expect(artifacts.audioDurationSecFor(beat11)).toBe(4.2);
+    expect(artifacts.audioDurationSecFor(beat11)).toBe(4.2); // raw measured
 
     const scene2 = threeSceneSpec.scenes[1]!;
-    expect(artifacts.clipDurationSecFor(scene2)).toBe(8.4); // 2 beats × 4.2
+    // 2 beats × 4.2 = 8.4, + 1.5 padding = 9.9, ceil → 10
+    expect(artifacts.clipDurationSecFor(scene2)).toBe(10);
   });
 
   it('falls back to authored beat.sec when probeAudioDurationSec is omitted', async () => {
     const events: ProgressEvent[] = [];
-    const deps = makeDeps(events, dir); // no probe
+    const deps = makeDeps(events, dir); // no probe, no padding
     const artifacts = await generateArtifacts(threeSceneSpec, deps);
 
     const beat21 = threeSceneSpec.scenes[1]!.beats[0]!;
     expect(artifacts.audioDurationSecFor(beat21)).toBe(7); // authored sec
-    expect(artifacts.clipDurationSecFor(threeSceneSpec.scenes[1]!)).toBe(11); // 7 + 4
+    expect(artifacts.clipDurationSecFor(threeSceneSpec.scenes[1]!)).toBe(11); // ceil(7+4+0)
   });
 
   it('clip cache key changes when scene beat duration changes', async () => {

@@ -115,10 +115,10 @@ describe('buildFfmpegArgs', () => {
       // scene durations from threeSceneSpec: 5, 15, 4
       clipDurationsSec: [5, 15, 4],
     });
-    // setpts pre-pass for each clip
-    expect(filterGraph).toContain('[0:v]setpts=PTS-STARTPTS[v0]');
-    expect(filterGraph).toContain('[1:v]setpts=PTS-STARTPTS[v1]');
-    expect(filterGraph).toContain('[2:v]setpts=PTS-STARTPTS[v2]');
+    // setpts + format/fps normalization pre-pass for each clip
+    expect(filterGraph).toContain('[0:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v0]');
+    expect(filterGraph).toContain('[1:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v1]');
+    expect(filterGraph).toContain('[2:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v2]');
     // First xfade: between v0 and v1, offset = 5 - 0.5 = 4.500
     expect(filterGraph).toContain('[v0][v1]xfade=transition=fade:duration=0.5:offset=4.500[xv1]');
     // Second xfade: between xv1 and v2, offset = (5 + 15) - 2 * 0.5 = 19.000
