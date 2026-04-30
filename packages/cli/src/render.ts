@@ -32,6 +32,10 @@ export interface RenderOptions {
   confirm: boolean;
   /** Override the cost rates if your contracts differ. */
   rates?: CostRates;
+  /** Crossfade between consecutive clips, seconds (architecture §6.7). Defaults to 0.5s. Set 0 for hard cuts. */
+  xfadeSec?: number;
+  /** Tolerance the verify step uses on output duration. Defaults to 2s. Bump for long chapters where small per-clip rounding adds up. */
+  verifyToleranceSec?: number;
 }
 
 export interface RenderDeps {
@@ -49,6 +53,13 @@ export interface RenderDeps {
   runFfmpeg: (args: string[]) => Promise<{ code: number; stderr: string }>;
   /** Probe the output. Tests inject a stub returning a valid FfprobeOutput. */
   ffprobe: (path: string) => Promise<FfprobeOutput>;
+  /**
+   * Probe a cached audio (or video) file for its actual duration in seconds.
+   * Forwarded to the orchestrator so video clips are sized to actual narration
+   * length, not authored `beat.sec`. CLI passes a real ffprobe-backed impl;
+   * tests can stub.
+   */
+  probeAudioDurationSec?: (path: string) => Promise<number>;
   logger: RenderLogger;
   /** Optional progress callback for the orchestrator stage. */
   onProgress?: (event: ProgressEvent) => void;
@@ -99,6 +110,7 @@ export async function runRender(
     imageModel: deps.imageModel,
     narrationVoiceId: deps.narrationVoiceId,
     narrationModel: deps.narrationModel,
+    ...(deps.probeAudioDurationSec ? { probeAudioDurationSec: deps.probeAudioDurationSec } : {}),
     ...(deps.onProgress ? { onProgress: deps.onProgress } : {}),
   });
 
@@ -108,7 +120,18 @@ export async function runRender(
     ambientBedPath: spec.ambientBed ?? null,
   });
 
-  const { args } = buildFfmpegArgs(timeline, { outputPath: options.outputPath });
+  // Use measured clip durations for both verify-expected and the xfade chain.
+  const measuredClipDurations = spec.scenes.map((s) => artifacts.clipDurationSecFor(s));
+  const xfadeSec = options.xfadeSec ?? 0.5;
+  const expectedOutputSec =
+    measuredClipDurations.reduce((sum, d) => sum + d, 0) -
+    (xfadeSec > 0 ? Math.max(0, measuredClipDurations.length - 1) * xfadeSec : 0);
+
+  const { args } = buildFfmpegArgs(timeline, {
+    outputPath: options.outputPath,
+    xfadeSec,
+    clipDurationsSec: measuredClipDurations,
+  });
 
   deps.logger.log(`Encoding to ${options.outputPath}…`);
   const { code, stderr } = await deps.runFfmpeg(args);
@@ -117,12 +140,17 @@ export async function runRender(
   }
 
   const probe = await deps.ffprobe(options.outputPath);
-  const verify = verifyOutput(probe, { expectedDurationSec: timeline.totalDurationSec });
+  const verify = verifyOutput(probe, {
+    expectedDurationSec: expectedOutputSec,
+    ...(options.verifyToleranceSec !== undefined
+      ? { toleranceSec: options.verifyToleranceSec }
+      : {}),
+  });
   if (!verify.ok) {
     throw new Error(`output verification failed: ${verify.problems.join('; ')}`);
   }
 
-  deps.logger.log(`✓ Rendered ${options.outputPath} (${timeline.totalDurationSec.toString()}s)`);
+  deps.logger.log(`✓ Rendered ${options.outputPath} (${expectedOutputSec.toFixed(1)}s)`);
   return {
     cost,
     timeline,

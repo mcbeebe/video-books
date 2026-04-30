@@ -116,6 +116,43 @@ describe('generateArtifacts', () => {
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([5, 11]);
   });
 
+  it('uses probeAudioDurationSec to size video clips when injected', async () => {
+    const events: ProgressEvent[] = [];
+    // Stub probe: pretend every audio file is 3.5s long, regardless of authored beat.sec.
+    const deps = makeDeps(events, dir, {
+      probeAudioDurationSec: async () => 3.5,
+    });
+    await generateArtifacts(threeSceneSpec, deps);
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    // scene 1 = 1 beat × 3.5 = 3.5s; scene 2 = 2 beats × 3.5 = 7s
+    expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([3.5, 7]);
+  });
+
+  it('Artifacts.audioDurationSecFor and clipDurationSecFor return measured values', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir, {
+      probeAudioDurationSec: async () => 4.2,
+    });
+    const artifacts = await generateArtifacts(threeSceneSpec, deps);
+
+    const beat11 = threeSceneSpec.scenes[0]!.beats[0]!;
+    expect(artifacts.audioDurationSecFor(beat11)).toBe(4.2);
+
+    const scene2 = threeSceneSpec.scenes[1]!;
+    expect(artifacts.clipDurationSecFor(scene2)).toBe(8.4); // 2 beats × 4.2
+  });
+
+  it('falls back to authored beat.sec when probeAudioDurationSec is omitted', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir); // no probe
+    const artifacts = await generateArtifacts(threeSceneSpec, deps);
+
+    const beat21 = threeSceneSpec.scenes[1]!.beats[0]!;
+    expect(artifacts.audioDurationSecFor(beat21)).toBe(7); // authored sec
+    expect(artifacts.clipDurationSecFor(threeSceneSpec.scenes[1]!)).toBe(11); // 7 + 4
+  });
+
   it('clip cache key changes when scene beat duration changes', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir);

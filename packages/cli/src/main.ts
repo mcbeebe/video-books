@@ -184,6 +184,30 @@ async function runRenderCommand(
       narrationModel: 'eleven_multilingual_v2',
       runFfmpeg: realRunFfmpeg,
       ffprobe,
+      probeAudioDurationSec: async (path) => {
+        const probe = await ffprobe(path);
+        const duration = Number(probe.format.duration);
+        return Number.isFinite(duration) ? duration : 0;
+      },
+      onProgress: (event) => {
+        switch (event.kind) {
+          case 'image':
+            logger.log(
+              `  ${event.cached ? '·' : '✓'} image scene ${event.sceneN.toString()}${event.cached ? ' (cached)' : ''}`,
+            );
+            break;
+          case 'video':
+            logger.log(
+              `  ${event.cached ? '·' : '✓'} video scene ${event.sceneN.toString()} / ${event.provider} @ ${event.durationSec.toFixed(1)}s${event.cached ? ' (cached)' : ''}`,
+            );
+            break;
+          case 'narration':
+            logger.log(
+              `  ${event.cached ? '·' : '✓'} narration ${event.beatId}${event.cached ? ' (cached)' : ''}`,
+            );
+            break;
+        }
+      },
       logger,
     },
     { outputPath, maxCostUsd, confirm },

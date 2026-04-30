@@ -106,4 +106,56 @@ describe('buildFfmpegArgs', () => {
     const idx = args.indexOf('-r');
     expect(args[idx + 1]).toBe('30');
   });
+
+  it('uses xfade chain when xfadeSec > 0', () => {
+    const tl = buildTimeline(threeSceneSpec, artifacts);
+    const { filterGraph, args } = buildFfmpegArgs(tl, {
+      outputPath: '/tmp/out.mp4',
+      xfadeSec: 0.5,
+      // scene durations from threeSceneSpec: 5, 15, 4
+      clipDurationsSec: [5, 15, 4],
+    });
+    // setpts pre-pass for each clip
+    expect(filterGraph).toContain('[0:v]setpts=PTS-STARTPTS[v0]');
+    expect(filterGraph).toContain('[1:v]setpts=PTS-STARTPTS[v1]');
+    expect(filterGraph).toContain('[2:v]setpts=PTS-STARTPTS[v2]');
+    // First xfade: between v0 and v1, offset = 5 - 0.5 = 4.500
+    expect(filterGraph).toContain('[v0][v1]xfade=transition=fade:duration=0.5:offset=4.500[xv1]');
+    // Second xfade: between xv1 and v2, offset = (5 + 15) - 2 * 0.5 = 19.000
+    expect(filterGraph).toContain('[xv1][v2]xfade=transition=fade:duration=0.5:offset=19.000[v]');
+    // Output stream still labeled [v]
+    expect(args[args.indexOf('-map') + 1]).toBe('[v]');
+  });
+
+  it('falls back to plain concat when xfadeSec is 0', () => {
+    const tl = buildTimeline(threeSceneSpec, artifacts);
+    const { filterGraph } = buildFfmpegArgs(tl, { outputPath: '/tmp/out.mp4', xfadeSec: 0 });
+    expect(filterGraph).toContain('concat=n=3:v=1:a=0[v]');
+    expect(filterGraph).not.toContain('xfade');
+  });
+
+  it('falls back to plain concat when only one clip (xfade impossible)', () => {
+    const oneSceneSpec: ChapterSpec = {
+      ...validChapterSpec,
+      scenes: [{ ...validScene, n: 1, beats: [{ ...validBeat, id: '1.1', sec: 5 }] }],
+    };
+    const tl = buildTimeline(oneSceneSpec, artifacts);
+    const { filterGraph } = buildFfmpegArgs(tl, { outputPath: '/tmp/out.mp4', xfadeSec: 0.5 });
+    expect(filterGraph).toContain('concat=n=1:v=1:a=0[v]');
+    expect(filterGraph).not.toContain('xfade');
+  });
+
+  it('xfade uses provided clipDurationsSec, not timeline scene durations', () => {
+    const tl = buildTimeline(threeSceneSpec, artifacts);
+    // Override durations: pretend the actual clips are 8, 7, 11s
+    const { filterGraph } = buildFfmpegArgs(tl, {
+      outputPath: '/tmp/out.mp4',
+      xfadeSec: 0.5,
+      clipDurationsSec: [8, 7, 11],
+    });
+    // First fade offset = 8 - 0.5 = 7.500
+    expect(filterGraph).toContain('offset=7.500[xv1]');
+    // Second fade offset = 8 + 7 - 1.0 = 14.000
+    expect(filterGraph).toContain('offset=14.000[v]');
+  });
 });
