@@ -1,5 +1,7 @@
 # video-books
 
+[![CI](https://github.com/mcbeebe/video-books/actions/workflows/ci.yml/badge.svg)](https://github.com/mcbeebe/video-books/actions/workflows/ci.yml)
+
 WCAP (Wilderness Classics Audio-Video Pilot) render pipeline. Produces long-form ambient audio-video adaptations of public-domain American wilderness writing from a structured chapter spec.
 
 See [`CLAUDE.md`](./CLAUDE.md) for project conventions and the deliverables-folder copy of `WCAP_Architecture_v1.md` for full pipeline architecture.
