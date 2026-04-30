@@ -1,4 +1,8 @@
 {
   "files": [],
-  "references": [{ "path": "./packages/types" }, { "path": "./packages/chapter-parser" }]
+  "references": [
+    { "path": "./packages/types" },
+    { "path": "./packages/chapter-parser" },
+    { "path": "./packages/cache" }
+  ]
 }
