@@ -67,6 +67,15 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/video-gen:
+    dependencies:
+      '@video-books/http-utils':
+        specifier: workspace:*
+        version: link:../http-utils
+      '@video-books/types':
+        specifier: workspace:*
+        version: link:../types
+
 packages:
 
   '@ampproject/remapping@2.3.0':
