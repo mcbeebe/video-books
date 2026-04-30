@@ -79,27 +79,31 @@ describe('run (cli dispatch)', () => {
     expect(out.join('\n')).toMatch(/Total:.*\$/);
   });
 
-  it('render parses --max-cost / --confirm / --output flags', async () => {
-    const { logger, out } = bufferLogger();
-    const code = await run({
-      argv: [
-        'node',
-        'wcap',
-        'render',
-        'spec.json',
-        '--max-cost',
-        '100',
-        '--confirm',
-        '--output',
-        '/tmp/out.mp4',
-      ],
-      logger,
-    });
-    expect(code).toBe(0);
-    const text = out.join('\n');
-    expect(text).toMatch(/max-cost: 100/);
-    expect(text).toMatch(/confirm:\s+true/);
-    expect(text).toMatch(/output:\s+\/tmp\/out\.mp4/);
+  it('render fails fast with usage when no spec path given', async () => {
+    const { logger, err } = bufferLogger();
+    const code = await run({ argv: ['node', 'wcap', 'render'], logger });
+    expect(code).toBe(1);
+    expect(err.join('\n')).toMatch(/usage: wcap render/);
+  });
+
+  it('render fails when required env vars are missing', async () => {
+    const original = { ...process.env };
+    for (const k of ['FAL_KEY', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID']) {
+      process.env[k] = '';
+    }
+    try {
+      const { logger, err } = bufferLogger();
+      const code = await run({
+        argv: ['node', 'wcap', 'render', 'spec.json'],
+        logger,
+        loadSpec: async () => validChapterSpec,
+      });
+      expect(code).toBe(1);
+      expect(err.join('\n')).toMatch(/missing required env vars/);
+      expect(err.join('\n')).toMatch(/FAL_KEY/);
+    } finally {
+      Object.assign(process.env, original);
+    }
   });
 
   it('validate without a path returns 1 with usage', async () => {

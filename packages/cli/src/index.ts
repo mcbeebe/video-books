@@ -16,3 +16,10 @@ export {
   type ProviderRouter,
   type VideoGenerator,
 } from './orchestrator.js';
+export {
+  runRender,
+  type RenderDeps,
+  type RenderLogger,
+  type RenderOptions,
+  type RenderResult,
+} from './render.js';
