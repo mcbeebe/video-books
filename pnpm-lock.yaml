@@ -53,6 +53,30 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
+  packages/cli:
+    dependencies:
+      '@video-books/assembler':
+        specifier: workspace:*
+        version: link:../assembler
+      '@video-books/cache':
+        specifier: workspace:*
+        version: link:../cache
+      '@video-books/chapter-parser':
+        specifier: workspace:*
+        version: link:../chapter-parser
+      '@video-books/image-gen':
+        specifier: workspace:*
+        version: link:../image-gen
+      '@video-books/narration':
+        specifier: workspace:*
+        version: link:../narration
+      '@video-books/types':
+        specifier: workspace:*
+        version: link:../types
+      '@video-books/video-gen':
+        specifier: workspace:*
+        version: link:../video-gen
+
   packages/http-utils: {}
 
   packages/image-gen:

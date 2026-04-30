@@ -1,0 +1,30 @@
+{
+  "name": "@video-books/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/main.js",
+  "types": "./dist/main.d.ts",
+  "bin": {
+    "wcap": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/main.d.ts",
+      "default": "./dist/main.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@video-books/assembler": "workspace:*",
+    "@video-books/cache": "workspace:*",
+    "@video-books/chapter-parser": "workspace:*",
+    "@video-books/image-gen": "workspace:*",
+    "@video-books/narration": "workspace:*",
+    "@video-books/types": "workspace:*",
+    "@video-books/video-gen": "workspace:*"
+  }
+}

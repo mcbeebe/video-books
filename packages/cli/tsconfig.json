@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist"],
+  "references": [
+    { "path": "../assembler" },
+    { "path": "../cache" },
+    { "path": "../chapter-parser" },
+    { "path": "../image-gen" },
+    { "path": "../narration" },
+    { "path": "../types" },
+    { "path": "../video-gen" }
+  ]
+}

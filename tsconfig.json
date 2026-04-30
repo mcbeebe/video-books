@@ -8,6 +8,7 @@
     { "path": "./packages/narration" },
     { "path": "./packages/image-gen" },
     { "path": "./packages/video-gen" },
-    { "path": "./packages/assembler" }
+    { "path": "./packages/assembler" },
+    { "path": "./packages/cli" }
   ]
 }

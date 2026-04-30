@@ -49,6 +49,8 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/require-await': 'off',
       '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
 );
