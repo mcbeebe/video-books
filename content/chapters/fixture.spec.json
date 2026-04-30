@@ -1,0 +1,61 @@
+{
+  "slug": "muir-fixture-3-scene",
+  "title": "Mount Hoffman and Lake Tenaya — 3-scene fixture",
+  "source": "https://www.gutenberg.org/files/32540/32540-h/32540-h.htm",
+  "styleAnchor": "content/style-anchors/wilderness-v1.txt",
+  "output": { "width": 1920, "height": 1080, "fps": 30 },
+  "scenes": [
+    {
+      "n": 1,
+      "type": "HERO",
+      "day": "Day 14 — morning",
+      "image": "Wide alpine meadow at first light, dew on grass, distant snowy peaks, soft golden rim light, oil-painting feel",
+      "motion": "very slow push-in toward the distant peaks, light wind animating the grass",
+      "beats": [
+        {
+          "id": "1.1",
+          "sec": 8,
+          "text": "We crossed the meadow in the gray of dawn, the grass cold and silver with dew."
+        },
+        {
+          "id": "1.2",
+          "sec": 6,
+          "text": "Eastward, the great peaks held the first thin light of the sun."
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "type": "SCENE",
+      "day": "Day 14 — midday",
+      "image": "Granite ridge approaching Mount Hoffman, glacial polish on the rock, sparse pines, bright noon sun",
+      "motion": "slow pan left to right across the ridge, gentle parallax",
+      "beats": [
+        {
+          "id": "2.1",
+          "sec": 7,
+          "text": "By midday the ridge laid itself bare to the sun, granite polished by ages of ice."
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "type": "HERO",
+      "day": "Day 14 — afternoon",
+      "image": "Lake Tenaya from the high ridge, deep blue water, ringed by pale granite domes, late afternoon",
+      "motion": "slow tilt down from sky to lake surface, water shimmer animated",
+      "beats": [
+        {
+          "id": "3.1",
+          "sec": 9,
+          "text": "From the high ridge we looked down on Lake Tenaya, a blue stone set in white granite."
+        },
+        {
+          "id": "3.2",
+          "sec": 5,
+          "text": "Nothing else moved, save the lake's surface answering the wind."
+        }
+      ]
+    }
+  ]
+}

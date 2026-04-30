@@ -1,7 +1,15 @@
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
+import { ffprobe, runFfmpeg as realRunFfmpeg } from '@video-books/assembler';
+import { createCache } from '@video-books/cache';
 import { parseChapterFile } from '@video-books/chapter-parser';
+import { createImageClient } from '@video-books/image-gen';
+import { createNarrationClient } from '@video-books/narration';
 import type { ChapterSpec } from '@video-books/types';
+import { createVideoClient, pickProvider } from '@video-books/video-gen';
 import { estimateCost, formatCost } from './cost.js';
+import { runRender } from './render.js';
 
 /** Logger interface — `console`-compatible. Tests inject a buffer. */
 export interface Logger {
@@ -54,7 +62,7 @@ export async function run(opts: RunOptions): Promise<number> {
       case 'cost':
         return await runCost(rest, loadSpec, opts.logger);
       case 'render':
-        return runRender(rest, opts.logger);
+        return await runRenderCommand(rest, loadSpec, opts.logger);
       default:
         opts.logger.error(`unknown command: ${subcommand ?? ''}`);
         opts.logger.log(HELP);
@@ -104,30 +112,81 @@ async function runCost(
   return 0;
 }
 
-function runRender(args: string[], logger: Logger): number {
-  // Surface the parsed args so the user sees what would be wired up;
-  // actual rendering wires together cli/orchestrator + assembler in PR #10
-  // (e2e fixture) where we have a 3-scene fixture to validate against.
+async function runRenderCommand(
+  args: string[],
+  loadSpec: (p: string) => Promise<ChapterSpec>,
+  logger: Logger,
+): Promise<number> {
   const { values, positionals } = parseArgs({
     args,
     options: {
       'max-cost': { type: 'string' },
       confirm: { type: 'boolean' },
       output: { type: 'string' },
+      'cache-dir': { type: 'string' },
     },
     allowPositionals: true,
   });
   const path = positionals[0];
   if (path === undefined) {
-    logger.error('usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH]');
+    logger.error(
+      'usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH] [--cache-dir DIR]',
+    );
     return 1;
   }
-  logger.log('render: not yet implemented in this PR');
-  logger.log(`  spec:     ${path}`);
-  logger.log(`  max-cost: ${values['max-cost'] ?? '50'}`);
-  logger.log(`  confirm:  ${(values.confirm ?? false).toString()}`);
-  logger.log(`  output:   ${values.output ?? '(default: output/<slug>.mp4)'}`);
-  logger.log('  see PR #10 (e2e fixture) for the wired-up render path');
+
+  const env = process.env;
+  const missing = ['FAL_KEY', 'ELEVENLABS_API_KEY', 'ELEVENLABS_VOICE_ID'].filter(
+    (k) => env[k] === undefined || env[k] === '',
+  );
+  if (missing.length > 0) {
+    logger.error(`missing required env vars: ${missing.join(', ')}`);
+    logger.error('see docs/API_KEYS.md (PR #11) for setup');
+    return 1;
+  }
+
+  const spec = await loadSpec(path);
+  const styleAnchorPath = join(dirname(path), '..', spec.styleAnchor.replace(/^content\//, ''));
+  const styleAnchor = await readFile(spec.styleAnchor, 'utf8').catch(async () =>
+    readFile(styleAnchorPath, 'utf8'),
+  );
+
+  const cacheDir = values['cache-dir'] ?? 'cache';
+  const outputPath = values.output ?? `output/${spec.slug}.mp4`;
+  const maxCostUsd = Number(values['max-cost'] ?? '50');
+  const confirm = values.confirm ?? false;
+
+  const result = await runRender(
+    spec,
+    {
+      cache: createCache(cacheDir),
+      imageClient: createImageClient({
+        apiKey: env.FAL_KEY ?? '',
+        model: 'fal-ai/flux-pro/v1.1',
+      }),
+      videoClient: createVideoClient({
+        apiKey: env.FAL_KEY ?? '',
+        defaultProvider: 'kling',
+      }),
+      narrationClient: createNarrationClient({
+        apiKey: env.ELEVENLABS_API_KEY ?? '',
+        voiceId: env.ELEVENLABS_VOICE_ID ?? '',
+      }),
+      pickProvider,
+      styleAnchor: styleAnchor.trim(),
+      imageProvider: 'fal-ai/flux-pro',
+      imageModel: 'v1.1',
+      narrationVoiceId: env.ELEVENLABS_VOICE_ID ?? '',
+      narrationModel: 'eleven_multilingual_v2',
+      runFfmpeg: realRunFfmpeg,
+      ffprobe,
+      logger,
+    },
+    { outputPath, maxCostUsd, confirm },
+  );
+
+  logger.log(`Cost: $${result.cost.totalUsd.toFixed(2)}`);
+  logger.log(`Output: ${result.outputPath}`);
   return 0;
 }
 
