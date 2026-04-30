@@ -26,7 +26,21 @@ export const SceneSchema = z.object({
   day: z.string().min(1),
   /** Image generation prompt. Style anchor is appended at gen-time, not stored here. */
   image: z.string().min(20),
-  /** Motion direction for the video animation pass. */
+  /**
+   * Motion direction for the video animation pass.
+   *
+   * Authoring guidance (sleep / soundscape niche, kling-routed):
+   * - Prefer **single-direction, single-subject** motion. Multi-subject
+   *   prompts ("tilt from sky to lake", "pan from forest to ridge")
+   *   tend to be interpreted as cross-fades between two shots, which
+   *   breaks the continuous-motion feel sleep audiences expect.
+   * - Phrase as a single continuous camera move with secondary detail:
+   *     ✗ "tilt from sky to lake"
+   *     ✓ "slow downward tilt over the lake, sky visible at top of frame"
+   *     ✗ "pan from forest to ridge"
+   *     ✓ "slow rightward pan along the ridge, forest in foreground"
+   * - Lead with `slow` / `very slow` to anchor the pace.
+   */
   motion: z.string().min(1),
   /** Narration beats grouped under this scene. At least one beat is required. */
   beats: z.array(BeatSchema).min(1),

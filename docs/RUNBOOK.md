@@ -114,6 +114,34 @@ rm -rf cache/ output/
 
 1. Author the spec as JSON matching `ChapterSpecSchema` (see `packages/types/src/chapter.ts`).
 2. Place it at `content/chapters/<slug>.spec.json`.
-3. Validate: `pnpm wcap validate content/chapters/<slug>.spec.json`
+3. Validate: `pnpm wcap validate content/chapters/<slug>.spec.json` — flags any scene whose total beat duration exceeds the routed provider's max clip length (kling: 15s).
 4. Cost: `pnpm wcap cost content/chapters/<slug>.spec.json`
 5. Render: `pnpm wcap render content/chapters/<slug>.spec.json --max-cost <N>`
+
+## Authoring motion prompts (sleep / soundscape niche)
+
+Every scene needs a `motion` field. The default router sends every scene to **kling v3 Pro** (deliberate, cinematic, ~5–15s clips). To get continuous motion the audience can fall asleep to:
+
+- **Lead with `slow` or `very slow`** to anchor the pace.
+- **Single direction, single subject.** Two-subject prompts get interpreted as cross-fades between two shots, which jolt the viewer awake.
+
+| Avoid (multi-subject)           | Prefer (single continuous move)                                 |
+| ------------------------------- | --------------------------------------------------------------- |
+| `tilt from sky to lake`         | `slow downward tilt over the lake, sky visible at top of frame` |
+| `pan from forest to ridge`      | `slow rightward pan along the ridge, forest in foreground`      |
+| `zoom out revealing valley`     | `slow camera pull-back, valley emerges in frame`                |
+| `dissolve from morning to noon` | `slow push-in across the meadow at morning light`               |
+
+If you find a scene that needs a more dynamic shot (transitions, reveals, etc.) override the router by passing `provider: 'veo'` per-scene at the orchestrator layer — Veo handles non-continuous motion better than kling.
+
+## Authoring beat durations
+
+Each scene maps to **one** clip from the routed provider. The clip can be at most:
+
+| Provider          | Max clip length     |
+| ----------------- | ------------------- |
+| kling v3 pro      | 15s                 |
+| seedance 2.0 fast | 15s                 |
+| veo3.1 fast       | 8s (4 / 6 / 8 only) |
+
+`wcap validate` will flag any scene whose `sum(beats[].sec)` exceeds the routed provider's max. To fix: split the scene into multiple shorter scenes, each with its own image + motion + beats.
