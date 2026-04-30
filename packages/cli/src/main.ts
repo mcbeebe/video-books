@@ -9,6 +9,7 @@ import { createNarrationClient } from '@video-books/narration';
 import type { ChapterSpec } from '@video-books/types';
 import { createVideoClient, pickProvider } from '@video-books/video-gen';
 import { estimateCost, formatCost } from './cost.js';
+import { checkClipFeasibility, formatFeasibility } from './feasibility.js';
 import { runRender } from './render.js';
 
 /** Logger interface — `console`-compatible. Tests inject a buffer. */
@@ -94,7 +95,10 @@ async function runValidate(
   logger.log(
     `  ${spec.scenes.length.toString()} scenes, ${totalBeats.toString()} beats, ${totalSec.toString()}s total`,
   );
-  return 0;
+
+  const feasibility = checkClipFeasibility(spec, pickProvider);
+  logger.log(formatFeasibility(feasibility));
+  return feasibility.ok ? 0 : 1;
 }
 
 async function runCost(
