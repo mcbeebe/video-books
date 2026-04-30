@@ -16,6 +16,7 @@ export const KLING: VideoProviderConfig = {
   name: 'kling',
   modelPath: 'fal-ai/kling-video/v3/pro/image-to-video',
   defaultDurationSec: 5,
+  maxDurationSec: 15,
   formatRequest: ({ imageUrl, prompt, durationSec }) => ({
     start_image_url: imageUrl,
     prompt,

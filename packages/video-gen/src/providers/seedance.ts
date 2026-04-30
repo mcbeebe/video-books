@@ -15,6 +15,7 @@ export const SEEDANCE: VideoProviderConfig = {
   name: 'seedance',
   modelPath: 'bytedance/seedance-2.0/fast/image-to-video',
   defaultDurationSec: 5,
+  maxDurationSec: 15,
   formatRequest: ({ imageUrl, prompt, durationSec }) => ({
     image_url: imageUrl,
     prompt,

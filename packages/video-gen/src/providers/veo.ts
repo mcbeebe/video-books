@@ -21,6 +21,7 @@ export const VEO: VideoProviderConfig = {
   name: 'veo',
   modelPath: 'fal-ai/veo3.1/fast/image-to-video',
   defaultDurationSec: 6,
+  maxDurationSec: 8,
   formatRequest: ({ imageUrl, prompt, durationSec }) => ({
     image_url: imageUrl,
     prompt,

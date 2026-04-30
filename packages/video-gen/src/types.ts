@@ -69,6 +69,12 @@ export interface VideoProviderConfig {
   /** Default clip duration (seconds). The provider's formatRequest may coerce. */
   defaultDurationSec: number;
   /**
+   * Maximum supported clip length in seconds. Used by `wcap validate`
+   * (and by orchestrators that want to plan multi-clip splits) to flag
+   * scenes whose total duration would exceed what one clip can cover.
+   */
+  maxDurationSec: number;
+  /**
    * Translate the orchestrator's neutral request shape into the body fields
    * the provider's API actually expects. fal.ai providers diverge on field
    * names (Kling wants `start_image_url`, others want `image_url`) and on

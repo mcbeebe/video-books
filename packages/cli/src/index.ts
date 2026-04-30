@@ -23,3 +23,9 @@ export {
   type RenderOptions,
   type RenderResult,
 } from './render.js';
+export {
+  checkClipFeasibility,
+  formatFeasibility,
+  type ClipFeasibilityIssue,
+  type ClipFeasibilityReport,
+} from './feasibility.js';

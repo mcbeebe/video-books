@@ -168,6 +168,7 @@ describe('createVideoClient.generate', () => {
           name: 'kling',
           modelPath: 'fal-ai/kling-test',
           defaultDurationSec: 5,
+          maxDurationSec: 15,
           bodyExtras: { custom_flag: true, quality: 'high' },
         },
       },
