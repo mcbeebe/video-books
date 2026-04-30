@@ -47,7 +47,19 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
 
-  packages/narration: {}
+  packages/http-utils: {}
+
+  packages/image-gen:
+    dependencies:
+      '@video-books/http-utils':
+        specifier: workspace:*
+        version: link:../http-utils
+
+  packages/narration:
+    dependencies:
+      '@video-books/http-utils':
+        specifier: workspace:*
+        version: link:../http-utils
 
   packages/types:
     dependencies:
