@@ -8,6 +8,8 @@ export default tseslint.config(
       '**/coverage/**',
       '**/*.tsbuildinfo',
       'output/**',
+      // Operator scripts run via tsx; not part of the typed project graph.
+      'scripts/**',
     ],
   },
   ...tseslint.configs.strictTypeChecked,
