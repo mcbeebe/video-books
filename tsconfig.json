@@ -4,6 +4,8 @@
     { "path": "./packages/types" },
     { "path": "./packages/chapter-parser" },
     { "path": "./packages/cache" },
-    { "path": "./packages/narration" }
+    { "path": "./packages/http-utils" },
+    { "path": "./packages/narration" },
+    { "path": "./packages/image-gen" }
   ]
 }

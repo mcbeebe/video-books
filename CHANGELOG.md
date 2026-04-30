@@ -11,4 +11,5 @@ Format: `YYYY-MM-DD <kind>(<scope>): <summary> (#<pr>)`. Kinds match the convent
 - 2026-04-29 feat(types): add Zod schemas + TS types for `Beat`, `Scene`, `ChapterSpec` (architecture §5); retire `packages/hello` placeholder ([#2](https://github.com/mcbeebe/video-books/pull/2))
 - 2026-04-29 feat(chapter-parser): read + validate chapter spec JSON via `parseChapterFile` / `validateSpec` (architecture §6.1) ([#3](https://github.com/mcbeebe/video-books/pull/3))
 - 2026-04-29 feat(cache): content-addressable filesystem cache via `createCache` / `deriveKey` — atomic writes, last-write-wins (architecture §6.3-§6.5) ([#4](https://github.com/mcbeebe/video-books/pull/4))
-- 2026-04-29 feat(narration): ElevenLabs TTS client with typed errors, exponential-backoff retries on 429/5xx, DI'd `fetch` for unit tests (architecture §6.5)
+- 2026-04-29 feat(narration): ElevenLabs TTS client with typed errors, exponential-backoff retries on 429/5xx, DI'd `fetch` for unit tests (architecture §6.5) ([#5](https://github.com/mcbeebe/video-books/pull/5))
+- 2026-04-29 refactor(http-utils): extract `retry` + `backoffDelay` from narration into `@video-books/http-utils` (no behavior change); feat(image-gen): fal.ai-shaped image client with style-anchor injection, two-step submit + fetch, typed errors (architecture §6.3)

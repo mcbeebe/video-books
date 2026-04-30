@@ -1,4 +1,4 @@
-import { retry } from './retry.js';
+import { retry } from '@video-books/http-utils';
 
 /** Voice tuning parameters per ElevenLabs `voice_settings`. */
 export interface VoiceSettings {

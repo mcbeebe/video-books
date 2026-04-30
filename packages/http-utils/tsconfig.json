@@ -5,6 +5,5 @@
     "rootDir": "src"
   },
   "include": ["src/**/*"],
-  "exclude": ["dist"],
-  "references": [{ "path": "../http-utils" }]
+  "exclude": ["dist"]
 }
