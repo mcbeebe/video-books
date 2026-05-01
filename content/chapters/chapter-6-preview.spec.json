@@ -8,9 +8,9 @@
     {
       "n": 1,
       "type": "HERO",
-      "day": "July 26 — summit of Mount Hoffman, Yosemite",
-      "image": "A solitary 19th-century naturalist with beard and wide-brim hat cresting a granite ridge of Mount Hoffman in Yosemite at sunrise, vast Sierra Nevada peaks of the Yosemite high country spreading below, golden light catching distant snow",
-      "motion": "very slow upward dolly revealing the panorama as the figure ascends",
+      "day": "July 26 — ascending Mount Hoffman, Yosemite",
+      "image": "A solitary 19th-century naturalist with beard and wide-brim hat ASCENDING a granite ridge of Mount Hoffman in Yosemite at sunrise, viewed from below as he climbs upward, vast Sierra Nevada peaks of the Yosemite high country just beginning to appear above the ridge, golden first light catching distant snow",
+      "motion": "very slow upward dolly tracking the climbing figure from below",
       "beats": [
         {
           "id": "1.1",
@@ -27,9 +27,9 @@
     {
       "n": 2,
       "type": "HERO",
-      "day": "July 26 — summit of Mount Hoffman, Yosemite (continued)",
-      "image": "A solitary 19th-century naturalist with beard and wide-brim hat cresting a granite ridge of Mount Hoffman in Yosemite at sunrise, vast Sierra Nevada peaks of the Yosemite high country spreading below, golden light catching distant snow",
-      "motion": "continued slow upward camera movement, the figure now near the crest with the full Yosemite panorama visible",
+      "day": "July 26 — arrived at the summit",
+      "image": "The same 19th-century naturalist now STANDING at the actual summit of Mount Hoffman in Yosemite, viewed from behind, arms relaxed at his sides as he beholds the vast Yosemite Sierra Nevada panorama spreading out below and around him, golden morning light, painterly hand-drawn style",
+      "motion": "very slow forward camera move past the standing figure to reveal the panorama in front of him",
       "beats": [
         {
           "id": "1.3",
@@ -98,9 +98,9 @@
     {
       "n": 6,
       "type": "SCENE",
-      "day": "July 26 — Muir's journal at the summit",
-      "image": "An open journal on a flat granite slab on Mount Hoffman in Yosemite, with pencil sketches of Sierra alpine plants and crystals, Sierra alpine wildflowers around it, hands sketching at the edge of the page",
-      "motion": "slow downward tilt over the journal page, hand sketching visible at the bottom of frame",
+      "day": "July 26 — questioning at the summit, nature as the wondrous page",
+      "image": "The 19th-century naturalist standing at the summit of Mount Hoffman in Yosemite, gazing down at a sunlit slab of granite covered with Sierra alpine wildflowers, geological crystals, pine needles, and small ferns — nature's 'wondrous page' of divine symbols spread before him — vast Sierra Nevada landscape stretching to the horizon behind, vintage Studio Ghibli watercolor style; NO physical book, NO journal, NO writing implements; the LANDSCAPE itself is the page",
+      "motion": "very slow downward camera movement, beginning with the standing figure's view and gliding across the natural tableau of wildflowers and crystals on the granite, distant landscape softly visible at frame edges",
       "beats": [
         {
           "id": "5.1",

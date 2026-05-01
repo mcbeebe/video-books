@@ -128,9 +128,19 @@ export async function runRender(
 
   // Use measured clip durations for both verify-expected and the xfade chain.
   const measuredClipDurations = spec.scenes.map((s) => artifacts.clipDurationSecFor(s));
-  const expectedOutputSec =
+  const videoStreamSec =
     measuredClipDurations.reduce((sum, d) => sum + d, 0) -
     (xfadeSec > 0 ? Math.max(0, measuredClipDurations.length - 1) * xfadeSec : 0);
+  // Audio stream: every beat's measured (or fallback authored) duration, summed.
+  const audioStreamSec = spec.scenes
+    .flatMap((s) => s.beats)
+    .reduce((sum, b) => sum + artifacts.audioDurationSecFor(b), 0);
+  // ffmpeg's -shortest trims output to whichever stream is shorter; verify
+  // expects that final length, not just the video-stream length. Without
+  // this min(), specs where ElevenLabs reads faster than the clip duration
+  // (most of them, after our two-pass + ceil padding) trigger spurious
+  // verifyOutput failures even though the rendered MP4 is correct.
+  const expectedOutputSec = Math.min(videoStreamSec, audioStreamSec);
 
   const { args, filterGraph } = buildFfmpegArgs(timeline, {
     outputPath: options.outputPath,
