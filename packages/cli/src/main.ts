@@ -220,14 +220,24 @@ async function runRenderCommand(
               `  ${event.cached ? '·' : '✓'} image scene ${event.sceneN.toString()}${event.cached ? ' (cached)' : ''}`,
             );
             break;
-          case 'video':
+          case 'video': {
+            const subclipNote =
+              event.subclipCount > 1
+                ? ` (clip ${(event.subclipIndex + 1).toString()}/${event.subclipCount.toString()})`
+                : '';
             logger.log(
-              `  ${event.cached ? '·' : '✓'} video scene ${event.sceneN.toString()} / ${event.provider} @ ${event.durationSec.toFixed(1)}s${event.cached ? ' (cached)' : ''}`,
+              `  ${event.cached ? '·' : '✓'} video scene ${event.sceneN.toString()}${subclipNote} / ${event.provider} @ ${event.durationSec.toFixed(1)}s${event.cached ? ' (cached)' : ''}`,
             );
             break;
+          }
           case 'narration':
             logger.log(
               `  ${event.cached ? '·' : '✓'} narration ${event.beatId}${event.cached ? ' (cached)' : ''}`,
+            );
+            break;
+          case 'heartbeat':
+            logger.log(
+              `    … still waiting on ${event.label} (${event.elapsedSec.toString()}s elapsed)`,
             );
             break;
         }
