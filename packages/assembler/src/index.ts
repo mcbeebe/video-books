@@ -11,6 +11,7 @@ export {
   type FfmpegInvocation,
 } from './filtergraph.js';
 export {
+  extractLastFrame,
   ffprobe,
   runFfmpeg,
   verifyOutput,

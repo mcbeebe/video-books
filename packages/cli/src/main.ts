@@ -1,13 +1,24 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { ffprobe, runFfmpeg as realRunFfmpeg } from '@video-books/assembler';
+import {
+  extractLastFrame as realExtractLastFrame,
+  ffprobe,
+  runFfmpeg as realRunFfmpeg,
+} from '@video-books/assembler';
 import { createCache } from '@video-books/cache';
 import { parseChapterFile } from '@video-books/chapter-parser';
 import { createImageClient } from '@video-books/image-gen';
 import { createNarrationClient } from '@video-books/narration';
 import type { ChapterSpec } from '@video-books/types';
-import { createVideoClient, pickProvider } from '@video-books/video-gen';
+import {
+  KLING,
+  SEEDANCE,
+  VEO,
+  createVideoClient,
+  pickProvider,
+  type VideoProviderName,
+} from '@video-books/video-gen';
 import { estimateCost, formatCost } from './cost.js';
 import { checkClipFeasibility, formatFeasibility } from './feasibility.js';
 import { runRender } from './render.js';
@@ -190,6 +201,17 @@ async function runRenderCommand(
         const probe = await ffprobe(path);
         const duration = Number(probe.format.duration);
         return Number.isFinite(duration) ? duration : 0;
+      },
+      extractLastFrame: realExtractLastFrame,
+      providerMaxDurationSec: (provider: VideoProviderName) => {
+        switch (provider) {
+          case 'kling':
+            return KLING.maxDurationSec;
+          case 'seedance':
+            return SEEDANCE.maxDurationSec;
+          case 'veo':
+            return VEO.maxDurationSec;
+        }
       },
       onProgress: (event) => {
         switch (event.kind) {

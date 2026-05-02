@@ -126,6 +126,88 @@ describe('generateArtifacts', () => {
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([4, 7]);
   });
 
+  it('splits long scenes into multiple sub-clips when exceeding provider max', async () => {
+    const events: ProgressEvent[] = [];
+    // Scene needs 30s of clip total, provider max is 12 → expect 3 sub-clips of 10s each.
+    const longSceneSpec: ChapterSpec = {
+      ...validChapterSpec,
+      scenes: [
+        {
+          ...validScene,
+          n: 1,
+          image: 'long scene image',
+          beats: [{ ...validBeat, id: '1.1', sec: 30, text: 'long narration text' }],
+        },
+      ],
+    };
+    let frameExtractCalls = 0;
+    const deps = makeDeps(events, dir, {
+      providerMaxDurationSec: () => 12,
+      extractLastFrame: async () => {
+        frameExtractCalls += 1;
+        return new Uint8Array([0xff, 0xfe, 0xfd]); // pretend last frame
+      },
+    });
+    const artifacts = await generateArtifacts(longSceneSpec, deps);
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls).toHaveLength(3);
+    // Each sub-clip request ≤ 12s; sum to 30s
+    const durations = calls.map((c) => (c[0] as { durationSec: number }).durationSec);
+    expect(durations.reduce((s, d) => s + d, 0)).toBe(30);
+    expect(durations.every((d) => d <= 12)).toBe(true);
+
+    // Frame extracted between sub-clips (not before first, not after last)
+    expect(frameExtractCalls).toBe(2);
+
+    // Artifacts surface all 3 sub-clip paths
+    expect(artifacts.clipPathsFor(longSceneSpec.scenes[0]!)).toHaveLength(3);
+    expect(artifacts.clipDurationsSecFor(longSceneSpec.scenes[0]!)).toEqual(durations);
+  });
+
+  it('does not split scenes that fit within the provider max', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir, {
+      providerMaxDurationSec: () => 15,
+      extractLastFrame: async () => new Uint8Array([0]),
+    });
+    await generateArtifacts(threeSceneSpec, deps);
+
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    // 2 scenes, each fits in one clip
+    expect(calls).toHaveLength(2);
+  });
+
+  it('reuses cached sub-clips on a second run (no re-spend)', async () => {
+    const events: ProgressEvent[] = [];
+    const longSceneSpec: ChapterSpec = {
+      ...validChapterSpec,
+      scenes: [
+        {
+          ...validScene,
+          n: 1,
+          image: 'long scene cache test',
+          beats: [{ ...validBeat, id: '1.1', sec: 24, text: 'long narration cache test' }],
+        },
+      ],
+    };
+    const deps1 = makeDeps(events, dir, {
+      providerMaxDurationSec: () => 10,
+      extractLastFrame: async () => new Uint8Array([1, 2, 3]),
+    });
+    await generateArtifacts(longSceneSpec, deps1);
+    const firstRunCalls = (deps1.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls
+      .length;
+    expect(firstRunCalls).toBeGreaterThan(1); // multi-clip
+
+    const deps2 = makeDeps(events, dir, {
+      providerMaxDurationSec: () => 10,
+      extractLastFrame: async () => new Uint8Array([1, 2, 3]),
+    });
+    await generateArtifacts(longSceneSpec, deps2);
+    expect(deps2.videoClient.generate).not.toHaveBeenCalled();
+  });
+
   it('clipPaddingSec adds to measured audio before ceiling', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir, {
@@ -139,7 +221,7 @@ describe('generateArtifacts', () => {
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([5, 9]);
   });
 
-  it('Artifacts.audioDurationSecFor returns measured; clipDurationSecFor returns ceil(audio+padding)', async () => {
+  it('Artifacts.audioDurationSecFor returns measured; clipDurationsSecFor returns ceil(audio+padding)', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir, {
       probeAudioDurationSec: async () => 4.2,
@@ -152,7 +234,7 @@ describe('generateArtifacts', () => {
 
     const scene2 = threeSceneSpec.scenes[1]!;
     // 2 beats × 4.2 = 8.4, + 1.5 padding = 9.9, ceil → 10
-    expect(artifacts.clipDurationSecFor(scene2)).toBe(10);
+    expect(artifacts.clipDurationsSecFor(scene2)).toEqual([10]);
   });
 
   it('falls back to authored beat.sec when probeAudioDurationSec is omitted', async () => {
@@ -162,7 +244,7 @@ describe('generateArtifacts', () => {
 
     const beat21 = threeSceneSpec.scenes[1]!.beats[0]!;
     expect(artifacts.audioDurationSecFor(beat21)).toBe(7); // authored sec
-    expect(artifacts.clipDurationSecFor(threeSceneSpec.scenes[1]!)).toBe(11); // ceil(7+4+0)
+    expect(artifacts.clipDurationsSecFor(threeSceneSpec.scenes[1]!)).toEqual([11]); // ceil(7+4+0)
   });
 
   it('clip cache key changes when scene beat duration changes', async () => {
@@ -187,7 +269,7 @@ describe('generateArtifacts', () => {
 
     const sceneA = threeSceneSpec.scenes[0]!;
     const sceneB = longerSpec.scenes[0]!;
-    expect(artifacts1.clipPathFor(sceneA)).not.toBe(artifacts2.clipPathFor(sceneB));
+    expect(artifacts1.clipPathsFor(sceneA)[0]).not.toBe(artifacts2.clipPathsFor(sceneB)[0]);
   });
 
   it('appends styleAnchor to the image prompt', async () => {
@@ -209,7 +291,7 @@ describe('generateArtifacts', () => {
     const scene1 = threeSceneSpec.scenes[0];
     if (!scene1) throw new Error('expected scene');
     expect(artifacts.imagePathFor(scene1)).toMatch(/\/images\/[0-9a-f]{64}\.png$/);
-    expect(artifacts.clipPathFor(scene1)).toMatch(/\/clips\/[0-9a-f]{64}\.mp4$/);
+    expect(artifacts.clipPathsFor(scene1)[0]).toMatch(/\/clips\/[0-9a-f]{64}\.mp4$/);
     const beat1 = scene1.beats[0];
     if (!beat1) throw new Error('expected beat');
     expect(artifacts.audioPathFor(beat1)).toMatch(/\/audio\/[0-9a-f]{64}\.mp3$/);

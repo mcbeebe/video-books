@@ -13,6 +13,7 @@ export {
   type NarrationGenerator,
   type OrchestratorDeps,
   type ProgressEvent,
+  type ProviderMaxDurationLookup,
   type ProviderRouter,
   type VideoGenerator,
 } from './orchestrator.js';

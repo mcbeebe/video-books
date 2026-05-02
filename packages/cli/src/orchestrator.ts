@@ -25,6 +25,9 @@ export interface NarrationGenerator {
 /** Picks the video provider for a scene (default: kling for everything — see `pickProvider` in @video-books/video-gen). */
 export type ProviderRouter = (scene: Pick<Scene, 'type'>) => 'kling' | 'seedance' | 'veo';
 
+/** Per-provider max clip length so the orchestrator can split long scenes. */
+export type ProviderMaxDurationLookup = (provider: 'kling' | 'seedance' | 'veo') => number;
+
 /** External dependencies — fully injected so the orchestrator is unit-testable. */
 export interface OrchestratorDeps {
   cache: CacheStore;
@@ -48,6 +51,23 @@ export interface OrchestratorDeps {
    */
   probeAudioDurationSec?: (path: string) => Promise<number>;
   /**
+   * Extract the very last frame of a cached clip as PNG bytes. Required for
+   * multi-clip-per-scene chaining: when a scene needs N>1 clips because its
+   * audio exceeds the provider's max clip length, the last frame of clip K
+   * becomes the start image of clip K+1 so the visual flows continuously
+   * instead of restarting from the scene's still each sub-clip.
+   *
+   * If omitted, scenes that exceed `providerMaxDurationSec` will use the
+   * scene's still as the start image for every sub-clip (acceptable in
+   * tests; visually a soft "continuation" feel in production).
+   */
+  extractLastFrame?: (clipPath: string) => Promise<Uint8Array>;
+  /**
+   * Per-provider max clip length in seconds. Used to decide when to split a
+   * scene into multiple sub-clips. Required when `extractLastFrame` is set.
+   */
+  providerMaxDurationSec?: ProviderMaxDurationLookup;
+  /**
    * Extra seconds added on top of measured scene-audio duration when sizing
    * each clip — usually set to the xfade overlap so video covers the entire
    * narration plus the fade tail. Combined with `Math.ceil`, this guarantees
@@ -61,17 +81,38 @@ export interface OrchestratorDeps {
 
 export type ProgressEvent =
   | { kind: 'image'; sceneN: number; cached: boolean }
-  | { kind: 'video'; sceneN: number; cached: boolean; provider: string; durationSec: number }
+  | {
+      kind: 'video';
+      sceneN: number;
+      cached: boolean;
+      provider: string;
+      durationSec: number;
+      /** Index within scene (0-based). For single-clip scenes always 0. */
+      subclipIndex: number;
+      /** Total sub-clips for this scene. For single-clip scenes always 1. */
+      subclipCount: number;
+    }
   | { kind: 'narration'; beatId: string; cached: boolean; durationSec: number };
 
 export interface Artifacts {
   imagePathFor(scene: Scene): string;
-  clipPathFor(scene: Scene): string;
+  /**
+   * Returns one or more cached clip paths for the scene, in playback order.
+   * Single-clip scenes return `[onePath]`; long scenes return one path per
+   * sub-clip. The filter graph concats sub-clips with no fade in between
+   * (sub-clips of the same scene are visually continuous via last-frame
+   * chaining), and crossfades only between scenes.
+   */
+  clipPathsFor(scene: Scene): string[];
   audioPathFor(beat: Beat): string;
   /** Measured (ffprobe) or fallback (authored `beat.sec`) duration for each beat. */
   audioDurationSecFor(beat: Beat): number;
-  /** Measured-audio sum for the scene — what was passed to the video client as `durationSec`. */
-  clipDurationSecFor(scene: Scene): number;
+  /**
+   * Per-sub-clip durations for the scene, in playback order. Sum of these
+   * equals the scene's requested clip duration. For single-clip scenes,
+   * returns a single-element array.
+   */
+  clipDurationsSecFor(scene: Scene): number[];
 }
 
 /**
@@ -83,13 +124,12 @@ export interface Artifacts {
  *   Pass 1: narration first, sequential per voice (architecture §6.5). After
  *           each beat we probe the cached MP3 to learn its *actual* duration —
  *           ElevenLabs reads at its own pace, not the authored `beat.sec`.
- *   Pass 2: per scene → image → video. Video duration is set to the sum of
- *           the scene's measured beat audio, not the authored sum, so the
- *           assembled MP4 has video continuously aligned with what is
- *           actually being said.
- *
- * Returned `Artifacts` exposes both path lookups and the measured durations
- * the assembler needs to build the filter graph.
+ *   Pass 2: per scene → image → video clips. Video duration is set to the
+ *           sum of the scene's measured beat audio, not the authored sum,
+ *           so the assembled MP4 has video continuously aligned with what
+ *           is actually being said. Scenes whose total exceeds the routed
+ *           provider's max clip length are split into N sub-clips that
+ *           chain via last-frame extraction.
  */
 export async function generateArtifacts(
   spec: ChapterSpec,
@@ -109,37 +149,58 @@ export async function generateArtifacts(
   }
 
   const padding = deps.clipPaddingSec ?? 0;
-  const clipDurations = new Map<number, number>();
+  const subclipDurations = new Map<number, number[]>();
+  const subclipPaths = new Map<number, string[]>();
+
   for (const scene of spec.scenes) {
     await ensureImage(scene, deps);
-    const requestedSec = clipDurationFor(sumSceneAudio(scene, audioDurations), padding);
-    clipDurations.set(scene.n, requestedSec);
-    await ensureVideo(scene, requestedSec, deps);
+    const sceneAudioSec = sumSceneAudio(scene, audioDurations);
+    const requestedSec = clipDurationFor(sceneAudioSec, padding);
+    const splits = planSubclips(scene, requestedSec, deps);
+    subclipDurations.set(scene.n, splits);
+    const paths = await ensureVideoClips(scene, splits, deps);
+    subclipPaths.set(scene.n, paths);
   }
 
   return {
     imagePathFor: (s) => deps.cache.pathFor('images', imageKey(s, deps), 'png'),
-    clipPathFor: (s) =>
-      deps.cache.pathFor(
-        'clips',
-        clipKey(s, clipDurationFor(sumSceneAudio(s, audioDurations), padding), deps),
-        'mp4',
-      ),
+    clipPathsFor: (s) =>
+      subclipPaths.get(s.n) ?? [
+        deps.cache.pathFor(
+          'clips',
+          clipKey(s, clipDurationFor(sumSceneAudio(s, audioDurations), padding), 0, deps),
+          'mp4',
+        ),
+      ],
     audioPathFor: (b) => deps.cache.pathFor('audio', narrationKey(b, deps), 'mp3'),
     audioDurationSecFor: (b) => audioDurations.get(b.id) ?? b.sec,
-    clipDurationSecFor: (s) =>
-      clipDurations.get(s.n) ?? clipDurationFor(sumSceneAudio(s, audioDurations), padding),
+    clipDurationsSecFor: (s) =>
+      subclipDurations.get(s.n) ?? [clipDurationFor(sumSceneAudio(s, audioDurations), padding)],
   };
 }
 
 /**
- * Compute the clip-duration we ask the provider for, given measured audio
- * length and an xfade-padding allowance. Always rounded UP so the clip is at
- * least as long as `audio + padding` — guarantees no audio truncation and
- * leaves room for a fade-out that doesn't overlap the narration.
+ * Plan the per-sub-clip durations for a scene. If the requested duration
+ * fits in a single clip (≤ provider max), returns `[requestedSec]`.
+ * Otherwise splits into N near-equal sub-clips, each ≤ provider max, that
+ * sum to `requestedSec`.
  */
-function clipDurationFor(audioSec: number, paddingSec: number): number {
-  return Math.max(1, Math.ceil(audioSec + paddingSec));
+function planSubclips(scene: Scene, requestedSec: number, deps: OrchestratorDeps): number[] {
+  const provider = deps.pickProvider(scene);
+  const maxSec = deps.providerMaxDurationSec?.(provider) ?? Infinity;
+  if (requestedSec <= maxSec) return [requestedSec];
+
+  const count = Math.ceil(requestedSec / maxSec);
+  const evenSplit = Math.ceil(requestedSec / count);
+  const splits: number[] = [];
+  let remaining = requestedSec;
+  for (let i = 0; i < count - 1; i += 1) {
+    const dur = Math.min(evenSplit, maxSec);
+    splits.push(dur);
+    remaining -= dur;
+  }
+  splits.push(Math.min(Math.max(1, remaining), maxSec));
+  return splits;
 }
 
 async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> {
@@ -153,27 +214,83 @@ async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> 
   deps.onProgress?.({ kind: 'image', sceneN: scene.n, cached: false });
 }
 
-async function ensureVideo(
+/**
+ * Generate (or fetch from cache) the sub-clips for a scene. The first sub-clip
+ * uses the scene's still image; subsequent sub-clips use the last frame of
+ * the previous sub-clip (extracted via ffmpeg) so the visual continues
+ * smoothly. Falls back to the scene still for every sub-clip if
+ * `extractLastFrame` isn't injected (test environments).
+ */
+async function ensureVideoClips(
   scene: Scene,
-  durationSec: number,
+  subclipSecs: number[],
   deps: OrchestratorDeps,
-): Promise<void> {
+): Promise<string[]> {
   const provider = deps.pickProvider(scene);
-  const key = clipKey(scene, durationSec, deps);
-  if (await deps.cache.has('clips', key, 'mp4')) {
-    deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: true, provider, durationSec });
-    return;
+  const subclipCount = subclipSecs.length;
+  const paths: string[] = [];
+
+  for (let i = 0; i < subclipCount; i += 1) {
+    const durationSec = subclipSecs[i] ?? 0;
+    const key = clipKey(scene, durationSec, i, deps);
+    const path = deps.cache.pathFor('clips', key, 'mp4');
+
+    if (await deps.cache.has('clips', key, 'mp4')) {
+      paths.push(path);
+      deps.onProgress?.({
+        kind: 'video',
+        sceneN: scene.n,
+        cached: true,
+        provider,
+        durationSec,
+        subclipIndex: i,
+        subclipCount,
+      });
+      continue;
+    }
+
+    let inputImage: Uint8Array;
+    if (i === 0) {
+      const stillImage = await deps.cache.get('images', imageKey(scene, deps), 'png');
+      if (stillImage === null) {
+        throw new Error(`expected cached image for scene ${scene.n.toString()}`);
+      }
+      inputImage = stillImage;
+    } else if (deps.extractLastFrame) {
+      const prevPath = paths[i - 1];
+      if (prevPath === undefined) throw new Error('expected previous sub-clip path');
+      inputImage = await deps.extractLastFrame(prevPath);
+    } else {
+      // No frame extraction available — reuse the scene still. Sub-clips will
+      // look like soft "restarts" of the same shot. Acceptable for tests;
+      // production should always inject extractLastFrame.
+      const stillImage = await deps.cache.get('images', imageKey(scene, deps), 'png');
+      if (stillImage === null) {
+        throw new Error(`expected cached image for scene ${scene.n.toString()}`);
+      }
+      inputImage = stillImage;
+    }
+
+    const { video } = await deps.videoClient.generate({
+      image: inputImage,
+      motion: scene.motion,
+      provider,
+      durationSec,
+    });
+    await deps.cache.set('clips', key, 'mp4', video);
+    paths.push(path);
+    deps.onProgress?.({
+      kind: 'video',
+      sceneN: scene.n,
+      cached: false,
+      provider,
+      durationSec,
+      subclipIndex: i,
+      subclipCount,
+    });
   }
-  const image = await deps.cache.get('images', imageKey(scene, deps), 'png');
-  if (image === null) throw new Error(`expected cached image for scene ${scene.n.toString()}`);
-  const { video } = await deps.videoClient.generate({
-    image,
-    motion: scene.motion,
-    provider,
-    durationSec,
-  });
-  await deps.cache.set('clips', key, 'mp4', video);
-  deps.onProgress?.({ kind: 'video', sceneN: scene.n, cached: false, provider, durationSec });
+
+  return paths;
 }
 
 async function ensureNarration(beat: Beat, deps: OrchestratorDeps): Promise<void> {
@@ -191,14 +308,20 @@ function imageKey(scene: Scene, deps: OrchestratorDeps): string {
   return deriveKey(scene.image, deps.styleAnchor, deps.imageProvider, deps.imageModel);
 }
 
-function clipKey(scene: Scene, durationSec: number, deps: OrchestratorDeps): string {
-  // durationSec (rounded) is part of the key: same image+motion+provider with
-  // a different requested length is a different clip.
+/**
+ * Cache key for sub-clip `index` of `scene` at `durationSec`. The sub-clip
+ * index participates in the key so each sub-clip gets a unique cached file
+ * even when image+motion+provider+duration match — chained sub-clips have
+ * different actual input frames but the same key inputs from the spec's
+ * point of view.
+ */
+function clipKey(scene: Scene, durationSec: number, index: number, deps: OrchestratorDeps): string {
   return deriveKey(
     imageKey(scene, deps),
     scene.motion,
     deps.pickProvider(scene),
     durationSec.toFixed(2),
+    index.toString(),
   );
 }
 
@@ -208,4 +331,14 @@ function narrationKey(beat: Beat, deps: OrchestratorDeps): string {
 
 function sumSceneAudio(scene: Scene, audioDurations: Map<string, number>): number {
   return scene.beats.reduce((sum, b) => sum + (audioDurations.get(b.id) ?? b.sec), 0);
+}
+
+/**
+ * Compute the clip-duration we ask the provider for, given measured audio
+ * length and an xfade-padding allowance. Always rounded UP so the clip is at
+ * least as long as `audio + padding` — guarantees no audio truncation and
+ * leaves room for a fade-out that doesn't overlap the narration.
+ */
+function clipDurationFor(audioSec: number, paddingSec: number): number {
+  return Math.max(1, Math.ceil(audioSec + paddingSec));
 }
