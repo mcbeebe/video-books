@@ -75,6 +75,16 @@ export interface OrchestratorDeps {
    * the fade-out happens *after* the narration ends.
    */
   clipPaddingSec?: number;
+  /**
+   * Emit a `heartbeat` ProgressEvent once an external API call has been
+   * running this long, then every `heartbeatIntervalMs` after. Defaults to
+   * 15s threshold + 30s interval — quiet for fast image / narration calls,
+   * useful for the multi-minute kling video calls. Set `heartbeatAfterMs: 0`
+   * to disable.
+   */
+  heartbeatAfterMs?: number;
+  /** See `heartbeatAfterMs`. Defaults to 30000 (30 seconds). */
+  heartbeatIntervalMs?: number;
   /** Optional progress callback — called after each generated artifact. */
   onProgress?: (event: ProgressEvent) => void;
 }
@@ -92,7 +102,19 @@ export type ProgressEvent =
       /** Total sub-clips for this scene. For single-clip scenes always 1. */
       subclipCount: number;
     }
-  | { kind: 'narration'; beatId: string; cached: boolean; durationSec: number };
+  | { kind: 'narration'; beatId: string; cached: boolean; durationSec: number }
+  | {
+      /**
+       * Periodic "still working" tick during a long external API call.
+       * Emitted only after the call has been running for at least
+       * `heartbeatAfterMs` (so short calls stay quiet). Useful for surfacing
+       * progress during the multi-minute kling waits without spamming during
+       * the fast image / narration calls.
+       */
+      kind: 'heartbeat';
+      label: string;
+      elapsedSec: number;
+    };
 
 export interface Artifacts {
   imagePathFor(scene: Scene): string;
@@ -209,7 +231,9 @@ async function ensureImage(scene: Scene, deps: OrchestratorDeps): Promise<void> 
     deps.onProgress?.({ kind: 'image', sceneN: scene.n, cached: true });
     return;
   }
-  const { image } = await deps.imageClient.generate(`${scene.image} ${deps.styleAnchor}`);
+  const { image } = await withHeartbeat(`image scene ${scene.n.toString()}`, deps, () =>
+    deps.imageClient.generate(`${scene.image} ${deps.styleAnchor}`),
+  );
   await deps.cache.set('images', key, 'png', image);
   deps.onProgress?.({ kind: 'image', sceneN: scene.n, cached: false });
 }
@@ -271,12 +295,18 @@ async function ensureVideoClips(
       inputImage = stillImage;
     }
 
-    const { video } = await deps.videoClient.generate({
-      image: inputImage,
-      motion: scene.motion,
-      provider,
-      durationSec,
-    });
+    const label =
+      subclipCount > 1
+        ? `video scene ${scene.n.toString()}/${(i + 1).toString()}-of-${subclipCount.toString()} / ${provider}`
+        : `video scene ${scene.n.toString()} / ${provider}`;
+    const { video } = await withHeartbeat(label, deps, () =>
+      deps.videoClient.generate({
+        image: inputImage,
+        motion: scene.motion,
+        provider,
+        durationSec,
+      }),
+    );
     await deps.cache.set('clips', key, 'mp4', video);
     paths.push(path);
     deps.onProgress?.({
@@ -299,7 +329,9 @@ async function ensureNarration(beat: Beat, deps: OrchestratorDeps): Promise<void
     deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: true, durationSec: beat.sec });
     return;
   }
-  const { audio } = await deps.narrationClient.generate(beat.text);
+  const { audio } = await withHeartbeat(`narration ${beat.id}`, deps, () =>
+    deps.narrationClient.generate(beat.text),
+  );
   await deps.cache.set('audio', key, 'mp3', audio);
   deps.onProgress?.({ kind: 'narration', beatId: beat.id, cached: false, durationSec: beat.sec });
 }
@@ -341,4 +373,44 @@ function sumSceneAudio(scene: Scene, audioDurations: Map<string, number>): numbe
  */
 function clipDurationFor(audioSec: number, paddingSec: number): number {
   return Math.max(1, Math.ceil(audioSec + paddingSec));
+}
+
+/**
+ * Run an async operation; if it's still pending after `heartbeatAfterMs`,
+ * start emitting `heartbeat` ProgressEvents every `heartbeatIntervalMs`
+ * until it resolves. Quiet for fast calls (image, narration); informative
+ * for the multi-minute kling video calls.
+ */
+async function withHeartbeat<T>(
+  label: string,
+  deps: OrchestratorDeps,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const after = deps.heartbeatAfterMs ?? 15000;
+  const interval = deps.heartbeatIntervalMs ?? 30000;
+  if (after <= 0 || !deps.onProgress) {
+    return fn();
+  }
+  const start = Date.now();
+  let intervalHandle: NodeJS.Timeout | undefined;
+  const startHandle: NodeJS.Timeout = setTimeout(() => {
+    deps.onProgress?.({
+      kind: 'heartbeat',
+      label,
+      elapsedSec: Math.round((Date.now() - start) / 1000),
+    });
+    intervalHandle = setInterval(() => {
+      deps.onProgress?.({
+        kind: 'heartbeat',
+        label,
+        elapsedSec: Math.round((Date.now() - start) / 1000),
+      });
+    }, interval);
+  }, after);
+  try {
+    return await fn();
+  } finally {
+    clearTimeout(startHandle);
+    if (intervalHandle !== undefined) clearInterval(intervalHandle);
+  }
 }

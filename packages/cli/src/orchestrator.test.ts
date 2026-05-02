@@ -208,6 +208,39 @@ describe('generateArtifacts', () => {
     expect(deps2.videoClient.generate).not.toHaveBeenCalled();
   });
 
+  it('emits heartbeat events for slow external calls', async () => {
+    const events: ProgressEvent[] = [];
+    let videoCalls = 0;
+    const deps = makeDeps(events, dir, {
+      videoClient: {
+        generate: vi.fn(async () => {
+          videoCalls += 1;
+          // First video call is slow (200ms), subsequent are instant.
+          if (videoCalls === 1) {
+            await new Promise<void>((resolve) => setTimeout(resolve, 200));
+          }
+          return { video: new Uint8Array([4, 5, 6]) };
+        }),
+      },
+      heartbeatAfterMs: 50,
+      heartbeatIntervalMs: 50,
+    });
+
+    await generateArtifacts(threeSceneSpec, deps);
+
+    const heartbeats = events.filter((e) => e.kind === 'heartbeat');
+    expect(heartbeats.length).toBeGreaterThanOrEqual(1);
+    expect(heartbeats[0]?.label).toMatch(/video scene/);
+    expect(heartbeats[0]?.elapsedSec).toBeGreaterThanOrEqual(0);
+  });
+
+  it('does not emit heartbeats when heartbeatAfterMs is 0', async () => {
+    const events: ProgressEvent[] = [];
+    const deps = makeDeps(events, dir, { heartbeatAfterMs: 0 });
+    await generateArtifacts(threeSceneSpec, deps);
+    expect(events.filter((e) => e.kind === 'heartbeat')).toHaveLength(0);
+  });
+
   it('clipPaddingSec adds to measured audio before ceiling', async () => {
     const events: ProgressEvent[] = [];
     const deps = makeDeps(events, dir, {
