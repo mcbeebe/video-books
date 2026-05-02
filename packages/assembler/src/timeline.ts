@@ -17,7 +17,12 @@ export interface TimelineScene {
   startSec: number;
   endSec: number;
   durationSec: number;
-  clipPath: string;
+  /**
+   * One or more cached MP4 paths in playback order. Single-clip scenes have
+   * one entry; multi-clip scenes (long narration) have several that play
+   * back-to-back inside the scene with no fade between them.
+   */
+  clipPaths: string[];
   beats: TimelineBeat[];
 }
 
@@ -33,8 +38,12 @@ export interface Timeline {
 
 /** Caller-provided artifact lookup — paths to cached PNG/MP4/MP3 files. */
 export interface Artifacts {
-  /** Returns the on-disk path for the cached MP4 clip belonging to scene `n`. */
-  clipPathFor(scene: Scene): string;
+  /**
+   * Returns one or more on-disk paths for the cached MP4 sub-clips of
+   * `scene`, in playback order. Single-clip scenes return a one-element
+   * array; multi-clip (long-narration) scenes return one path per sub-clip.
+   */
+  clipPathsFor(scene: Scene): string[];
   /** Returns the on-disk path for the cached MP3 audio belonging to beat `id`. */
   audioPathFor(beat: Beat): string;
   /** Optional ambient bed path. Null/undefined to omit. */
@@ -53,11 +62,10 @@ export interface Artifacts {
  *
  * @example
  *   const timeline = buildTimeline(spec, {
- *     clipPathFor: (s) => `cache/clips/${s.n}.mp4`,
- *     audioPathFor: (b) => `cache/audio/${b.id}.mp3`,
+ *     clipPathsFor: (s) => artifacts.clipPathsFor(s),
+ *     audioPathFor: (b) => artifacts.audioPathFor(b),
  *     ambientBedPath: spec.ambientBed ?? null,
  *   });
- *   await fs.writeFile('timeline.json', JSON.stringify(timeline, null, 2));
  */
 export function buildTimeline(spec: ChapterSpec, artifacts: Artifacts): Timeline {
   let cursor = 0;
@@ -86,7 +94,7 @@ export function buildTimeline(spec: ChapterSpec, artifacts: Artifacts): Timeline
       startSec: sceneStart,
       endSec: sceneEnd,
       durationSec: sceneDurationSec,
-      clipPath: artifacts.clipPathFor(scene),
+      clipPaths: artifacts.clipPathsFor(scene),
       beats,
     };
   });

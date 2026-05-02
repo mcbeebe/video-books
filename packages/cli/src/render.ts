@@ -14,6 +14,7 @@ import {
   type ImageGenerator,
   type NarrationGenerator,
   type ProgressEvent,
+  type ProviderMaxDurationLookup,
   type ProviderRouter,
   type VideoGenerator,
 } from './orchestrator.js';
@@ -60,6 +61,18 @@ export interface RenderDeps {
    * tests can stub.
    */
   probeAudioDurationSec?: (path: string) => Promise<number>;
+  /**
+   * Extract the very last frame of a cached clip as PNG bytes. Required for
+   * multi-clip-per-scene chaining (long scenes split into N sub-clips).
+   * CLI passes the assembler's `extractLastFrame`; tests stub.
+   */
+  extractLastFrame?: (clipPath: string) => Promise<Uint8Array>;
+  /**
+   * Per-provider max clip length lookup. Required when `extractLastFrame` is
+   * set so the orchestrator knows when to split. CLI builds from
+   * `@video-books/video-gen` provider configs.
+   */
+  providerMaxDurationSec?: ProviderMaxDurationLookup;
   logger: RenderLogger;
   /** Optional progress callback for the orchestrator stage. */
   onProgress?: (event: ProgressEvent) => void;
@@ -117,35 +130,34 @@ export async function runRender(
     narrationModel: deps.narrationModel,
     clipPaddingSec: xfadeSec,
     ...(deps.probeAudioDurationSec ? { probeAudioDurationSec: deps.probeAudioDurationSec } : {}),
+    ...(deps.extractLastFrame ? { extractLastFrame: deps.extractLastFrame } : {}),
+    ...(deps.providerMaxDurationSec ? { providerMaxDurationSec: deps.providerMaxDurationSec } : {}),
     ...(deps.onProgress ? { onProgress: deps.onProgress } : {}),
   });
 
   const timeline = buildTimeline(spec, {
-    clipPathFor: (scene) => artifacts.clipPathFor(scene),
+    clipPathsFor: (scene) => artifacts.clipPathsFor(scene),
     audioPathFor: (beat) => artifacts.audioPathFor(beat),
     ambientBedPath: spec.ambientBed ?? null,
   });
 
-  // Use measured clip durations for both verify-expected and the xfade chain.
-  const measuredClipDurations = spec.scenes.map((s) => artifacts.clipDurationSecFor(s));
+  // Per-scene sub-clip durations for the xfade chain.
+  const clipDurationsPerScene = spec.scenes.map((s) => artifacts.clipDurationsSecFor(s));
+  const totalClipSec = clipDurationsPerScene.flat().reduce((sum, d) => sum + d, 0);
   const videoStreamSec =
-    measuredClipDurations.reduce((sum, d) => sum + d, 0) -
-    (xfadeSec > 0 ? Math.max(0, measuredClipDurations.length - 1) * xfadeSec : 0);
+    totalClipSec - (xfadeSec > 0 ? Math.max(0, clipDurationsPerScene.length - 1) * xfadeSec : 0);
   // Audio stream: every beat's measured (or fallback authored) duration, summed.
   const audioStreamSec = spec.scenes
     .flatMap((s) => s.beats)
     .reduce((sum, b) => sum + artifacts.audioDurationSecFor(b), 0);
   // ffmpeg's -shortest trims output to whichever stream is shorter; verify
-  // expects that final length, not just the video-stream length. Without
-  // this min(), specs where ElevenLabs reads faster than the clip duration
-  // (most of them, after our two-pass + ceil padding) trigger spurious
-  // verifyOutput failures even though the rendered MP4 is correct.
+  // expects that final length, not just the video-stream length.
   const expectedOutputSec = Math.min(videoStreamSec, audioStreamSec);
 
   const { args, filterGraph } = buildFfmpegArgs(timeline, {
     outputPath: options.outputPath,
     xfadeSec,
-    clipDurationsSec: measuredClipDurations,
+    clipDurationsSec: clipDurationsPerScene,
   });
 
   deps.logger.log(`Encoding to ${options.outputPath}… (xfade=${xfadeSec.toString()}s)`);

@@ -20,17 +20,27 @@ export interface BuildFfmpegArgsOptions {
   /** Constant Rate Factor — lower = better. Defaults to 18 (visually lossless-ish). */
   crf?: number;
   /**
-   * Crossfade duration between consecutive clips in seconds. Architecture §6.7
-   * specifies 0.5s. Set to 0 to use a hard concat (no overlap). Each clip must
-   * be at least `2 × xfadeSec` long for xfade to make sense.
+   * Crossfade duration between consecutive scenes in seconds. Architecture §6.7
+   * specifies 0.5s; PR #18 raised the default to 1.5s for sleep-niche
+   * perceptibility. Set to 0 to use a hard concat (no overlap). Each scene's
+   * total clip duration must be at least `2 × xfadeSec` for xfade to make sense.
+   *
+   * Note: sub-clips _within_ a scene are always concatenated with no fade
+   * between them — multi-clip-per-scene chains via last-frame extraction so
+   * the visual is continuous and a fade would just smear the seam.
    */
   xfadeSec?: number;
   /**
-   * Actual clip durations in seconds, in scene order. Required when
+   * Per-scene array of sub-clip durations, in playback order. Required when
    * `xfadeSec > 0` so the filter graph can compute correct `offset` for each
-   * xfade boundary. If omitted, falls back to `timeline.scenes[i].durationSec`.
+   * scene-boundary xfade. The sum within each inner array equals the scene's
+   * total clip duration. If omitted, falls back to one entry per scene
+   * pulled from `timeline.scenes[i].durationSec`.
+   *
+   * Example: `[[8, 7], [5], [10, 10]]` → scene 1 has 2 sub-clips (8s + 7s),
+   * scene 2 has 1, scene 3 has 2.
    */
-  clipDurationsSec?: number[];
+  clipDurationsSec?: number[][];
 }
 
 /**
@@ -38,22 +48,16 @@ export interface BuildFfmpegArgsOptions {
  * shell escaping needed (returns an args array; pass straight to spawn).
  *
  * Architecture §6.7:
- * - Concatenate clips with optional 0.5s crossfades (xfade)
+ * - Concatenate clips with optional 0.5s+ crossfades (xfade) between SCENES.
+ *   Sub-clips within a scene concat with no fade (chained continuously).
  * - Mix narration (loud) + ambient bed (quiet, -18 dB default)
  * - Encode H.264 yuv420p, +faststart for web
  *
  * Inputs (in order):
- *   0..N-1   clip MP4s (one per scene)
- *   N..N+M-1 narration MP3s (one per beat, all scenes flattened)
- *   N+M      (optional) ambient bed
- *
- * @example
- *   const { args, outputPath } = buildFfmpegArgs(timeline, {
- *     outputPath: 'output/chapter-6.mp4',
- *     xfadeSec: 0.5,
- *     clipDurationsSec: timeline.scenes.map((s) => s.durationSec),
- *   });
- *   await runFfmpeg(args);
+ *   0..K-1   sub-clip MP4s, scene-major (all of scene 1's sub-clips, then
+ *            all of scene 2's, …) — total K = sum of sub-clip counts
+ *   K..K+M-1 narration MP3s (one per beat, all scenes flattened)
+ *   K+M      (optional) ambient bed
  */
 export function buildFfmpegArgs(
   timeline: Timeline,
@@ -63,32 +67,90 @@ export function buildFfmpegArgs(
   const preset = options.preset ?? 'slow';
   const crf = options.crf ?? 18;
   const xfadeSec = options.xfadeSec ?? 0;
-  const clipDurations = options.clipDurationsSec ?? timeline.scenes.map((s) => s.durationSec);
 
-  const clipPaths = timeline.scenes.map((s) => s.clipPath);
+  // Resolve clip-paths-per-scene and durations-per-scene from timeline
+  const clipPathsPerScene: string[][] = timeline.scenes.map((s) => s.clipPaths);
+  const clipDurationsPerScene: number[][] =
+    options.clipDurationsSec ?? timeline.scenes.map((s) => [s.durationSec]);
+
+  const flatClipPaths: string[] = clipPathsPerScene.flat();
   const beatPaths = timeline.scenes.flatMap((s) => s.beats.map((b) => b.audioPath));
-  const ambientIndex = timeline.ambientBedPath !== null ? clipPaths.length + beatPaths.length : -1;
+  const ambientIndex =
+    timeline.ambientBedPath !== null ? flatClipPaths.length + beatPaths.length : -1;
 
   const inputs: string[] = [];
-  for (const path of [...clipPaths, ...beatPaths]) inputs.push('-i', path);
+  for (const path of [...flatClipPaths, ...beatPaths]) inputs.push('-i', path);
   if (timeline.ambientBedPath !== null)
     inputs.push('-stream_loop', '-1', '-i', timeline.ambientBedPath);
 
   const filterParts: string[] = [];
 
-  // Video: concat or xfade chain
-  if (xfadeSec <= 0 || clipPaths.length < 2) {
+  // Build per-scene video streams: concat sub-clips within each scene
+  // (no fade), labeled [s0v], [s1v], etc.
+  let inputCursor = 0;
+  const sceneStreamLabels: string[] = [];
+  const sceneTotalDurations: number[] = [];
+  for (let sIdx = 0; sIdx < clipPathsPerScene.length; sIdx += 1) {
+    const subclipPaths = clipPathsPerScene[sIdx] ?? [];
+    const subclipDurations = clipDurationsPerScene[sIdx] ?? [];
+    sceneTotalDurations.push(subclipDurations.reduce((sum, d) => sum + d, 0));
+
+    const inputIndices: number[] = subclipPaths.map(() => {
+      const idx = inputCursor;
+      inputCursor += 1;
+      return idx;
+    });
+
+    const sceneLabel = `[s${sIdx.toString()}v]`;
+    sceneStreamLabels.push(sceneLabel);
+
+    const firstIdx = inputIndices[0] ?? 0;
+    if (inputIndices.length === 1) {
+      // Single sub-clip — just normalize fps/format/PTS
+      filterParts.push(
+        `[${firstIdx.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS${sceneLabel}`,
+      );
+    } else {
+      // Multiple sub-clips — normalize each then concat (no fade)
+      for (const idx of inputIndices) {
+        filterParts.push(
+          `[${idx.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[s${sIdx.toString()}c${(idx - firstIdx).toString()}]`,
+        );
+      }
+      const concatInputs = inputIndices
+        .map((_, ci) => `[s${sIdx.toString()}c${ci.toString()}]`)
+        .join('');
+      filterParts.push(
+        `${concatInputs}concat=n=${inputIndices.length.toString()}:v=1:a=0${sceneLabel}`,
+      );
+    }
+  }
+
+  // Now connect scene streams: either concat (no xfade) or xfade chain
+  if (xfadeSec <= 0 || sceneStreamLabels.length < 2) {
     filterParts.push(
-      clipPaths.map((_, i) => `[${i.toString()}:v]`).join('') +
-        `concat=n=${clipPaths.length.toString()}:v=1:a=0[v]`,
+      `${sceneStreamLabels.join('')}concat=n=${sceneStreamLabels.length.toString()}:v=1:a=0[v]`,
     );
   } else {
-    filterParts.push(...buildXfadeChain(clipPaths.length, clipDurations, xfadeSec));
+    // xfade chain across scenes
+    let cumulative = 0;
+    let prev = sceneStreamLabels[0] ?? '[s0v]';
+    for (let i = 1; i < sceneStreamLabels.length; i += 1) {
+      cumulative += sceneTotalDurations[i - 1] ?? 0;
+      const offset = cumulative - i * xfadeSec;
+      const isLast = i === sceneStreamLabels.length - 1;
+      const out = isLast ? '[v]' : `[xs${i.toString()}]`;
+      const next = sceneStreamLabels[i] ?? `[s${i.toString()}v]`;
+      filterParts.push(
+        `${prev}${next}xfade=transition=fade:duration=${xfadeSec.toString()}:offset=${offset.toFixed(3)}${out}`,
+      );
+      prev = out;
+    }
   }
 
   // Audio: always concat narration end-to-end (no fade — would clip words)
   filterParts.push(
-    beatPaths.map((_, i) => `[${(clipPaths.length + i).toString()}:a]`).join('') +
+    beatPaths.map((_, i) => `[${(flatClipPaths.length + i).toString()}:a]`).join('') +
       `concat=n=${beatPaths.length.toString()}:v=0:a=1[narr]`,
   );
 
@@ -131,51 +193,4 @@ export function buildFfmpegArgs(
   ];
 
   return { args, filterGraph, outputPath: options.outputPath };
-}
-
-/**
- * Build the xfade chain for N clips. For each consecutive pair, emit:
- *
- *   [aN][bN]xfade=transition=fade:duration=D:offset=O[xN]
- *
- * where O is the time at which the fade should *start* in the prior stream.
- * For 3 clips with durations T0, T1, T2 and fade D:
- *
- *   [0:v]setpts=PTS-STARTPTS[v0];
- *   [1:v]setpts=PTS-STARTPTS[v1];
- *   [2:v]setpts=PTS-STARTPTS[v2];
- *   [v0][v1]xfade=transition=fade:duration=D:offset=T0-D[xv1];
- *   [xv1][v2]xfade=transition=fade:duration=D:offset=T0+T1-2D[v];
- *
- * Output stream is labeled `[v]`. Total output video duration:
- *   sum(Ti) - (N-1)*D
- */
-function buildXfadeChain(n: number, durations: number[], fadeSec: number): string[] {
-  const parts: string[] = [];
-
-  // Pre-pass per clip: normalize to constant 30fps + yuv420p + reset PTS.
-  // xfade requires inputs to share fps, format, and SAR; provider clips can
-  // have variable framerate (especially fal.ai → kling) and that silently
-  // breaks the fade (it renders as a hard cut). Forcing fps + format here
-  // makes the fade actually visible.
-  for (let i = 0; i < n; i += 1) {
-    parts.push(`[${i.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[v${i.toString()}]`);
-  }
-
-  // Chain xfades. After k fades, cumulative output duration = sum(T0..Tk) - k*D
-  // The (k+1)-th fade starts at that time minus D.
-  let cumulative = 0;
-  let prev = '[v0]';
-  for (let i = 1; i < n; i += 1) {
-    cumulative += durations[i - 1] ?? 0;
-    const offset = cumulative - i * fadeSec;
-    const isLast = i === n - 1;
-    const out = isLast ? '[v]' : `[xv${i.toString()}]`;
-    parts.push(
-      `${prev}[v${i.toString()}]xfade=transition=fade:duration=${fadeSec.toString()}:offset=${offset.toFixed(3)}${out}`,
-    );
-    prev = out;
-  }
-
-  return parts;
 }

@@ -51,6 +51,70 @@ export async function runFfmpeg(
 }
 
 /**
+ * Extract the very last frame of a video file as a PNG byte array. Used by
+ * the multi-clip-per-scene flow to chain consecutive sub-clips: feed the
+ * last frame of clip K to the video provider as the start image for clip
+ * K+1 so the visual continues smoothly instead of restarting from the
+ * scene's still.
+ *
+ * @example
+ *   const lastFrame = await extractLastFrame('cache/clips/abc.mp4');
+ *   await videoClient.generate({ image: lastFrame, motion, durationSec: ... });
+ */
+export async function extractLastFrame(
+  inputPath: string,
+  options: { binary?: string; signal?: AbortSignal } = {},
+): Promise<Uint8Array> {
+  return new Promise<Uint8Array>((resolve, reject) => {
+    const child = spawn(
+      options.binary ?? 'ffmpeg',
+      [
+        // -sseof seeks from end of file (negative seconds = from the end)
+        '-sseof',
+        '-0.05',
+        '-i',
+        inputPath,
+        // -frames:v 1 — write a single video frame
+        '-frames:v',
+        '1',
+        // High-quality PNG to stdout
+        '-f',
+        'image2',
+        '-vcodec',
+        'png',
+        '-loglevel',
+        'error',
+        'pipe:1',
+      ],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        ...(options.signal ? { signal: options.signal } : {}),
+      },
+    );
+
+    const chunks: Buffer[] = [];
+    const stderrChunks: string[] = [];
+    child.stdout.on('data', (chunk: Buffer) => chunks.push(chunk));
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', (c: string) => stderrChunks.push(c));
+
+    child.once('error', reject);
+    child.once('close', (code) => {
+      if (code !== 0) {
+        reject(
+          new Error(
+            `extractLastFrame: ffmpeg exited ${(code ?? -1).toString()}: ${stderrChunks.join('')}`,
+          ),
+        );
+        return;
+      }
+      const buf = Buffer.concat(chunks);
+      resolve(new Uint8Array(buf));
+    });
+  });
+}
+
+/**
  * Run ffprobe on a file and return a parsed JSON description.
  *
  * @example

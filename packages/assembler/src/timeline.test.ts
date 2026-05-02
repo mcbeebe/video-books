@@ -4,7 +4,7 @@ import { validBeat, validChapterSpec, validScene } from '@video-books/types';
 import { buildTimeline } from './timeline.js';
 
 const artifacts = {
-  clipPathFor: (s: { n: number }) => `cache/clips/${s.n.toString()}.mp4`,
+  clipPathsFor: (s: { n: number }) => [`cache/clips/${s.n.toString()}.mp4`],
   audioPathFor: (b: { id: string }) => `cache/audio/${b.id}.mp3`,
 };
 
@@ -80,12 +80,12 @@ describe('buildTimeline', () => {
 
   it('uses provided artifact paths', () => {
     const tl = buildTimeline(validChapterSpec, {
-      clipPathFor: () => '/abs/clip.mp4',
+      clipPathsFor: () => ['/abs/clip.mp4'],
       audioPathFor: () => '/abs/beat.mp3',
     });
     const scene0 = tl.scenes[0];
     if (!scene0) throw new Error('expected scene');
-    expect(scene0.clipPath).toBe('/abs/clip.mp4');
+    expect(scene0.clipPaths).toEqual(['/abs/clip.mp4']);
     expect(scene0.beats[0]?.audioPath).toBe('/abs/beat.mp3');
   });
 
