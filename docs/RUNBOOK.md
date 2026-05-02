@@ -145,3 +145,24 @@ Each scene maps to **one** clip from the routed provider. The clip can be at mos
 | veo3.1 fast       | 8s (4 / 6 / 8 only) |
 
 `wcap validate` will flag any scene whose `sum(beats[].sec)` exceeds the routed provider's max. To fix: split the scene into multiple shorter scenes, each with its own image + motion + beats.
+
+## Authoring image prompts
+
+Two patterns we learned from the Chapter 6 preview render:
+
+**Pattern 1 — when splitting a long scene, make the two image prompts visibly different.** Don't reuse the same image text and just change motion. The model will produce near-identical clips and the transition will read as "the same thing twice in a row, awkwardly." Show progression instead — different framing, different moment in the action, a closer/wider shot.
+
+| Avoid                                                              | Prefer                                                                                                                    |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Same image for both halves of a split scene, different motion only | Scene A: figure climbing, viewed from below. Scene B: same figure now standing at the top, viewed from behind looking out |
+| Same alpine meadow, "slow pan" then "continued slow pan"           | Scene A: meadow at morning light, dewdrops. Scene B: meadow at midday, distant peaks now visible above the wildflowers    |
+
+**Pattern 2 — match the metaphor, not the literal noun.** Muir (and most nature writing) uses words like "page," "book," "letter," "pen" metaphorically — landscape AS a page, mountains AS a book. Drawing a literal journal makes the visual fight the metaphor.
+
+| Narration says                                          | Avoid (literal)                         | Prefer (metaphor-respecting)                                                                            |
+| ------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| "divine symbols crowded together on this wondrous page" | An open journal with sketches of plants | A close-up tableau of alpine wildflowers, crystals, ferns on granite — the landscape as nature's "page" |
+| "the great book of the mountains"                       | A book in a library                     | A vista of mountains receding, the page-like layering of ridges                                         |
+| "the pen of nature"                                     | A pen on a journal                      | A river or stream tracing its line across the landscape                                                 |
+
+If the docx-authored image prompt feels too literal once you've heard the narration, **rewrite the image prompt before bulk render.** It's a one-line edit; the cache will only re-pay for that one image + clip.

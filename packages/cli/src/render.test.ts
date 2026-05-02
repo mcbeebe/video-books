@@ -236,10 +236,12 @@ describe('runRender (e2e wiring with mock providers)', () => {
   it('default xfadeSec=1.5 expands clip durations with padding (verify-expected accounts for fade overlap)', async () => {
     const spec = await parseChapterFile(FIXTURE_PATH);
     const recorded = { ffmpegArgs: [] as string[][], ffprobePaths: [] as string[] };
-    // Fixture beats sum to 14, 7, 14. With xfadeSec=1.5 padding:
-    //   ceil(14+1.5)=16, ceil(7+1.5)=9, ceil(14+1.5)=16. Total = 41.
-    //   Minus 2 fades × 1.5s = 38s expected output.
-    const expectedSec = 38;
+    // Fixture beats sum to 14, 7, 14 = 35s of authored audio.
+    // With xfadeSec=1.5 padding:
+    //   ceil(14+1.5)=16, ceil(7+1.5)=9, ceil(14+1.5)=16 → video stream = 38s
+    //   audio stream (no probe injected, falls back to authored) = 35s
+    //   expectedOutputSec = min(38, 35) = 35  (ffmpeg -shortest trims to audio)
+    const expectedSec = 35;
     const deps = makeDeps(dir, expectedSec, recorded);
 
     const result = await runRender(spec, deps, {
@@ -250,6 +252,24 @@ describe('runRender (e2e wiring with mock providers)', () => {
 
     const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([16, 9, 16]);
+    expect(result.verify.ok).toBe(true);
+  });
+
+  it('expectedOutputSec uses min(video stream, audio stream) so audio-shorter renders verify', async () => {
+    const spec = await parseChapterFile(FIXTURE_PATH);
+    const recorded = { ffmpegArgs: [] as string[][], ffprobePaths: [] as string[] };
+    // Stub probeAudioDurationSec so audio is much shorter than authored.
+    // With ~3s per beat across 5 beats: audio ≈ 15s. Video stream ≈ 38s.
+    // expectedOutputSec should be min(38, 15) = 15. ffprobe stub returns 15.
+    const deps = makeDeps(dir, 15, recorded);
+    deps.probeAudioDurationSec = async () => 3;
+
+    const result = await runRender(spec, deps, {
+      outputPath: join(dir, 'fixture.mp4'),
+      maxCostUsd: 100,
+      confirm: false,
+    });
+
     expect(result.verify.ok).toBe(true);
   });
 });
