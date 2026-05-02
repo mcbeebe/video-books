@@ -1,0 +1,104 @@
+{
+  "slug": "muir-chapter-6-scenes-6-10",
+  "title": "Mount Hoffman and Lake Tenaya — Scenes 6-10 (continuing from preview)",
+  "source": "https://www.gutenberg.org/ebooks/32540",
+  "styleAnchor": "content/style-anchors/chapter-6-locked.txt",
+  "output": { "width": 1920, "height": 1080, "fps": 30 },
+  "scenes": [
+    {
+      "n": 6,
+      "type": "SCENE",
+      "day": "July 26 — Hoffman as ridge spur",
+      "image": "Aerial painterly view of Mount Hoffman in Yosemite as a distinctive ridge spur jutting from the broader Sierra Nevada range, the ridge stretching across the frame, surrounding Sierra evergreen forests and high-country meadows below, painterly map-like quality, Studio Ghibli watercolor style",
+      "motion": "very slow aerial drift along the length of the Mount Hoffman ridge",
+      "beats": [
+        {
+          "id": "6.1",
+          "sec": 8,
+          "text": "Mount Hoffman is the highest part of a ridge or spur about fourteen miles from the axis of the main range,"
+        },
+        {
+          "id": "6.2",
+          "sec": 7,
+          "text": "perhaps a remnant brought into relief and isolated by unequal denudation."
+        }
+      ]
+    },
+    {
+      "n": 7,
+      "type": "SCENE",
+      "day": "July 26 — watershed of the Yosemite high country",
+      "image": "Watercolor illustrated topographic map of the Yosemite high country showing Mount Hoffman's watershed branching into Tenaya Creek, Yosemite Creek, and the Tuolumne River, streams painted in dusty blue, soft mountain green and ochre terrain, Studio Ghibli watercolor style; NO text labels, NO compass rose",
+      "motion": "very slow downward camera drift across the painted map, water flow subtly animated along the streams",
+      "beats": [
+        {
+          "id": "7.1",
+          "sec": 9,
+          "text": "The southern slopes shed their waters into Yosemite Valley by Tenaya and Dome Creeks,"
+        },
+        {
+          "id": "7.2",
+          "sec": 9,
+          "text": "the northern in part into the Tuolumne River, but mostly into the Merced by Yosemite Creek."
+        }
+      ]
+    },
+    {
+      "n": 8,
+      "type": "SCENE",
+      "day": "July 26 — granite and slate",
+      "image": "Massive stacked Sierra Nevada granite blocks with reddish slate inclusions, cathedral-like rock formations in the Yosemite high country, soft golden afternoon light, Studio Ghibli watercolor style",
+      "motion": "very slow drift of soft cloud shadows across the granite and slate",
+      "beats": [
+        {
+          "id": "8.1",
+          "sec": 8,
+          "text": "The rock is mostly granite, with some small piles and crests rising here and there"
+        },
+        {
+          "id": "8.2",
+          "sec": 8,
+          "text": "in picturesque pillared and castellated remnants of red metamorphic slates."
+        }
+      ]
+    },
+    {
+      "n": 9,
+      "type": "HERO",
+      "day": "July 26 — cathedral masonry",
+      "image": "Painterly view of jointed Sierra Nevada granite blocks resembling cathedral masonry in the Yosemite high country, joints clearly visible separating the stones, soft golden light slanting across the rough surface, Studio Ghibli watercolor style",
+      "motion": "very slow rightward drift of soft clouds across the granite blocks",
+      "beats": [
+        {
+          "id": "9.1",
+          "sec": 9,
+          "text": "Both the granite and slates are divided by joints, making them separable into blocks like the stones of artificial masonry,"
+        },
+        {
+          "id": "9.2",
+          "sec": 7,
+          "text": "suggesting the Scripture: 'He hath builded the mountains.'"
+        }
+      ]
+    },
+    {
+      "n": 10,
+      "type": "SCENE",
+      "day": "July 26 — snow on the north slope",
+      "image": "Great banks of snow and ice piled in rocky hollows on a precipitous north slope of Mount Hoffman in Yosemite, deep blue shadows in the crevices, Sierra Nevada peaks visible in soft distance, Studio Ghibli watercolor style",
+      "motion": "very slow upward drift of icy mist rising off the snow",
+      "beats": [
+        {
+          "id": "10.1",
+          "sec": 8,
+          "text": "Great banks of snow and ice are piled in hollows on the cool precipitous north side"
+        },
+        {
+          "id": "10.2",
+          "sec": 7,
+          "text": "forming the highest perennial sources of Yosemite Creek."
+        }
+      ]
+    }
+  ]
+}
