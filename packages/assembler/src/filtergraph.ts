@@ -108,13 +108,13 @@ export function buildFfmpegArgs(
     if (inputIndices.length === 1) {
       // Single sub-clip — just normalize fps/format/PTS
       filterParts.push(
-        `[${firstIdx.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS${sceneLabel}`,
+        `[${firstIdx.toString()}:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS${sceneLabel}`,
       );
     } else {
       // Multiple sub-clips — normalize each then concat (no fade)
       for (const idx of inputIndices) {
         filterParts.push(
-          `[${idx.toString()}:v]fps=30,format=yuv420p,setpts=PTS-STARTPTS[s${sIdx.toString()}c${(idx - firstIdx).toString()}]`,
+          `[${idx.toString()}:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s${sIdx.toString()}c${(idx - firstIdx).toString()}]`,
         );
       }
       const concatInputs = inputIndices
