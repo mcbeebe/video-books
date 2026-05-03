@@ -104,17 +104,25 @@ export function buildFfmpegArgs(
     const sceneLabel = `[s${sIdx.toString()}v]`;
     sceneStreamLabels.push(sceneLabel);
 
+    // Force every sub-clip to the spec's output dimensions + 1:1 SAR. Kling
+    // sometimes returns sub-clips that differ by a few pixels (1664x1244 vs
+    // 1660x1244 observed in practice on v2.5-turbo) and ffmpeg's concat
+    // filter rejects mismatched parameters with "Failed to configure output
+    // pad". Scale-with-pad keeps the aspect ratio (no stretching) and pads
+    // letterbox bars in the spec colour to land at exactly width×height.
+    const w = timeline.output.width;
+    const h = timeline.output.height;
+    const normalize = `scale=${w.toString()}:${h.toString()}:force_original_aspect_ratio=decrease,pad=${w.toString()}:${h.toString()}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS`;
+
     const firstIdx = inputIndices[0] ?? 0;
     if (inputIndices.length === 1) {
-      // Single sub-clip — just normalize fps/format/PTS
-      filterParts.push(
-        `[${firstIdx.toString()}:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS${sceneLabel}`,
-      );
+      // Single sub-clip — normalize dimensions + fps/format/PTS
+      filterParts.push(`[${firstIdx.toString()}:v]${normalize}${sceneLabel}`);
     } else {
       // Multiple sub-clips — normalize each then concat (no fade)
       for (const idx of inputIndices) {
         filterParts.push(
-          `[${idx.toString()}:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s${sIdx.toString()}c${(idx - firstIdx).toString()}]`,
+          `[${idx.toString()}:v]${normalize}[s${sIdx.toString()}c${(idx - firstIdx).toString()}]`,
         );
       }
       const concatInputs = inputIndices

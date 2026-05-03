@@ -116,10 +116,19 @@ describe('buildFfmpegArgs', () => {
       // scene durations from threeSceneSpec: 5, 15, 4
       clipDurationsSec: [[5], [15], [4]],
     });
-    // Single sub-clip per scene → just normalize, label as scene stream
-    expect(filterGraph).toContain('[0:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0v]');
-    expect(filterGraph).toContain('[1:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s1v]');
-    expect(filterGraph).toContain('[2:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s2v]');
+    // Single sub-clip per scene → normalize dimensions/SAR + fps/format/PTS,
+    // label as scene stream. The scale+pad keeps aspect ratio (fixes
+    // kling sub-clip dimension drift, e.g. 1664x1244 vs 1660x1244).
+    expect(filterGraph).toContain('[0:v]scale=1920:1080:force_original_aspect_ratio=decrease');
+    expect(filterGraph).toContain(
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0v]',
+    );
+    expect(filterGraph).toContain(
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s1v]',
+    );
+    expect(filterGraph).toContain(
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s2v]',
+    );
     // First xfade: between s0v and s1v, offset = 5 - 0.5 = 4.500
     expect(filterGraph).toContain('[s0v][s1v]xfade=transition=fade:duration=0.5:offset=4.500[xs1]');
     // Second xfade: between xs1 and s2v, offset = (5 + 15) - 2 * 0.5 = 19.000
@@ -144,17 +153,19 @@ describe('buildFfmpegArgs', () => {
       clipDurationsSec: [[8, 7], [7], [6, 4]],
     });
 
-    // Scene 1: 2 sub-clips concat'd (no fade), labeled s0v
+    // Scene 1: 2 sub-clips concat'd (no fade), each scaled+padded+normalized
     expect(filterGraph).toContain(
-      '[0:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0c0]',
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0c0]',
     );
     expect(filterGraph).toContain(
-      '[1:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0c1]',
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s0c1]',
     );
     expect(filterGraph).toContain('[s0c0][s0c1]concat=n=2:v=1:a=0[s0v]');
 
     // Scene 2: single clip, normalized
-    expect(filterGraph).toContain('[2:v]fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s1v]');
+    expect(filterGraph).toContain(
+      ',setsar=1,fps=30,format=yuv420p,settb=AVTB,setpts=PTS-STARTPTS[s1v]',
+    );
 
     // Scene 3: 2 sub-clips concat'd
     expect(filterGraph).toContain('[s2c0][s2c1]concat=n=2:v=1:a=0[s2v]');
