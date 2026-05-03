@@ -12,8 +12,16 @@
       "image": "Macro of hemlock pistillate flowers in dark translucent purple, staminate flowers in vivid pure blue against the Yosemite Sierra Nevada sky, soft natural light, Studio Ghibli watercolor style",
       "motion": "very slow camera drift past the hemlock flowers",
       "beats": [
-        { "id": "20.1", "sec": 9, "text": "The pistillate are dark, rich purple, and almost translucent—" },
-        { "id": "20.2", "sec": 9, "text": "the staminate blue, a vivid pure tone of blue like the mountain sky." }
+        {
+          "id": "20.1",
+          "sec": 9,
+          "text": "The pistillate are dark, rich purple, and almost translucent—"
+        },
+        {
+          "id": "20.2",
+          "sec": 9,
+          "text": "the staminate blue, a vivid pure tone of blue like the mountain sky."
+        }
       ]
     },
     {
@@ -23,8 +31,16 @@
       "image": "Old hemlock tree with twisted snow-bent branches in the Yosemite Sierra Nevada high country, evidence of centuries of storms, ethereal high-altitude light, Studio Ghibli watercolor style",
       "motion": "very slow drift through the hemlock foliage",
       "beats": [
-        { "id": "21.1", "sec": 9, "text": "How wonderful that, with all its delicate feminine grace and beauty of form," },
-        { "id": "21.2", "sec": 9, "text": "this lovely tree up here, exposed to the wildest blasts, has already endured the storms of centuries of winters." }
+        {
+          "id": "21.1",
+          "sec": 9,
+          "text": "How wonderful that, with all its delicate feminine grace and beauty of form,"
+        },
+        {
+          "id": "21.2",
+          "sec": 9,
+          "text": "this lovely tree up here, exposed to the wildest blasts, has already endured the storms of centuries of winters."
+        }
       ]
     },
     {
@@ -34,7 +50,11 @@
       "image": "Two brave storm-beaten pines—mountain pine and dwarf white-bark pine—with gnarled trunks rising from rocky soil in the Yosemite Sierra Nevada high country, Studio Ghibli watercolor style",
       "motion": "very slow drift of branches in the mountain wind",
       "beats": [
-        { "id": "22.1", "sec": 9, "text": "The two pines also are brave storm-enduring trees—the mountain pine, Pinus monticola," },
+        {
+          "id": "22.1",
+          "sec": 9,
+          "text": "The two pines also are brave storm-enduring trees—the mountain pine, Pinus monticola,"
+        },
         { "id": "22.2", "sec": 7, "text": "and the dwarf pine, Pinus albicaulis." }
       ]
     },
@@ -45,8 +65,16 @@
       "image": "Massive mountain pine with deep brown bark in the Yosemite Sierra Nevada high country, only a few storm-beaten specimens reaching toward the summit of Mount Hoffman, soft afternoon light, Studio Ghibli watercolor style",
       "motion": "very slow camera arc around the mountain pine trunk",
       "beats": [
-        { "id": "23.1", "sec": 9, "text": "The mountain pine is closely related to the sugar pine, with cones four to six inches long." },
-        { "id": "23.2", "sec": 9, "text": "Only a few storm-beaten adventurers approach the summit of the mountain." }
+        {
+          "id": "23.1",
+          "sec": 9,
+          "text": "The mountain pine is closely related to the sugar pine, with cones four to six inches long."
+        },
+        {
+          "id": "23.2",
+          "sec": 9,
+          "text": "Only a few storm-beaten adventurers approach the summit of the mountain."
+        }
       ]
     },
     {
@@ -56,8 +84,16 @@
       "image": "Dwarf white-bark pine forming a dense flattened mat at timberline in the Yosemite Sierra Nevada high country, twisted by wind into a low chaparral-like form, Studio Ghibli watercolor style",
       "motion": "very slow drift of wind across the compressed foliage",
       "beats": [
-        { "id": "24.1", "sec": 9, "text": "The dwarf or white-bark pine is the species that forms the timber-line," },
-        { "id": "24.2", "sec": 9, "text": "so completely dwarfed that one may walk over the top of a bed of it as over snow-pressed chaparral." }
+        {
+          "id": "24.1",
+          "sec": 9,
+          "text": "The dwarf or white-bark pine is the species that forms the timber-line,"
+        },
+        {
+          "id": "24.2",
+          "sec": 9,
+          "text": "so completely dwarfed that one may walk over the top of a bed of it as over snow-pressed chaparral."
+        }
       ]
     },
     {
@@ -67,7 +103,11 @@
       "image": "High-altitude alpine meadow in the Yosemite Sierra Nevada at midday, vast dome of sky, scattered tiny wildflowers among gray rocks, distant Sierra peaks encircling, Studio Ghibli watercolor style",
       "motion": "very slow drift of clouds across the alpine meadow",
       "beats": [
-        { "id": "25.1", "sec": 9, "text": "How boundless the day seems as we revel in these storm-beaten sky gardens" },
+        {
+          "id": "25.1",
+          "sec": 9,
+          "text": "How boundless the day seems as we revel in these storm-beaten sky gardens"
+        },
         { "id": "25.2", "sec": 7, "text": "amid so vast a congregation of onlooking mountains." }
       ]
     },
@@ -78,8 +118,16 @@
       "image": "Severe weathered alpine landscape in the Yosemite Sierra Nevada contrasted with vibrant tiny flowers, paradox of bloom amid storm-chafed rock, Studio Ghibli watercolor style",
       "motion": "very slow camera drift across the weathered alpine landscape",
       "beats": [
-        { "id": "26.1", "sec": 9, "text": "Strange and admirable it is that the more savage and chilly and storm-chafed the mountains," },
-        { "id": "26.2", "sec": 8, "text": "the finer the glow on their faces and the finer the plants they bear." }
+        {
+          "id": "26.1",
+          "sec": 9,
+          "text": "Strange and admirable it is that the more savage and chilly and storm-chafed the mountains,"
+        },
+        {
+          "id": "26.2",
+          "sec": 8,
+          "text": "the finer the glow on their faces and the finer the plants they bear."
+        }
       ]
     },
     {
@@ -89,9 +137,21 @@
       "image": "Tiny flowers seemingly floating above harsh gray gravel in the Yosemite Sierra Nevada high country, ethereal painted quality, like a cloud of witnesses, Studio Ghibli watercolor style",
       "motion": "very slow camera drift over the floating mountain flowers",
       "beats": [
-        { "id": "27.1", "sec": 9, "text": "The myriads of flowers tingeing the mountain-top do not seem to have grown out of the dry, rough gravel," },
-        { "id": "27.2", "sec": 9, "text": "but rather they appear as visitors—a cloud of witnesses to Nature's love" },
-        { "id": "27.3", "sec": 8, "text": "in what we in our timid ignorance and unbelief call howling desert." }
+        {
+          "id": "27.1",
+          "sec": 9,
+          "text": "The myriads of flowers tingeing the mountain-top do not seem to have grown out of the dry, rough gravel,"
+        },
+        {
+          "id": "27.2",
+          "sec": 9,
+          "text": "but rather they appear as visitors—a cloud of witnesses to Nature's love"
+        },
+        {
+          "id": "27.3",
+          "sec": 8,
+          "text": "in what we in our timid ignorance and unbelief call howling desert."
+        }
       ]
     },
     {
@@ -101,8 +161,16 @@
       "image": "Macro of granite gravel in the Yosemite Sierra Nevada high country rich with mica flecks, hornblende, quartz, glittering in sunlight—mineral universe in miniature, Studio Ghibli watercolor style",
       "motion": "very slow camera push-in toward the glittering crystal-rich gravel",
       "beats": [
-        { "id": "28.1", "sec": 9, "text": "The surface of the ground, so dull and forbidding at first sight, besides being rich in plants," },
-        { "id": "28.2", "sec": 9, "text": "shines and sparkles with crystals—mica, hornblende, feldspar, quartz, tourmaline." }
+        {
+          "id": "28.1",
+          "sec": 9,
+          "text": "The surface of the ground, so dull and forbidding at first sight, besides being rich in plants,"
+        },
+        {
+          "id": "28.2",
+          "sec": 9,
+          "text": "shines and sparkles with crystals—mica, hornblende, feldspar, quartz, tourmaline."
+        }
       ]
     },
     {
@@ -112,8 +180,16 @@
       "image": "Extreme close-up of crystals catching light in the Yosemite Sierra Nevada high country, prismatic refractions, painterly textures with rainbow flares, Studio Ghibli watercolor style",
       "motion": "very slow camera rotation around the crystal cluster",
       "beats": [
-        { "id": "29.1", "sec": 8, "text": "The radiance in some places is so great as to be fairly dazzling—" },
-        { "id": "29.2", "sec": 8, "text": "keen lance rays of every color flashing, sparkling in glorious abundance," }
+        {
+          "id": "29.1",
+          "sec": 8,
+          "text": "The radiance in some places is so great as to be fairly dazzling—"
+        },
+        {
+          "id": "29.2",
+          "sec": 8,
+          "text": "keen lance rays of every color flashing, sparkling in glorious abundance,"
+        }
       ]
     },
     {
@@ -124,7 +200,11 @@
       "motion": "very slow camera drift past the flower and crystals, soft glow throughout",
       "beats": [
         { "id": "30.1", "sec": 9, "text": "joining the plants in their fine, brave beauty-work—" },
-        { "id": "30.2", "sec": 9, "text": "every crystal, every flower a window opening into heaven, a mirror reflecting the Creator." }
+        {
+          "id": "30.2",
+          "sec": 9,
+          "text": "every crystal, every flower a window opening into heaven, a mirror reflecting the Creator."
+        }
       ]
     },
     {
@@ -134,8 +214,16 @@
       "image": "A small distant figure of a rugged 19th-century field naturalist in worn wool clothes drifting across alpine ridges of the Yosemite Sierra Nevada high country, parallax of distant Sierra peaks, Studio Ghibli watercolor style",
       "motion": "very slow drift alongside the figure as he walks the ridge",
       "beats": [
-        { "id": "31.1", "sec": 8, "text": "From garden to garden, ridge to ridge, I drifted enchanted—" },
-        { "id": "31.2", "sec": 9, "text": "now on my knees gazing into the face of a daisy, now climbing again among the purple and azure flowers," }
+        {
+          "id": "31.1",
+          "sec": 8,
+          "text": "From garden to garden, ridge to ridge, I drifted enchanted—"
+        },
+        {
+          "id": "31.2",
+          "sec": 9,
+          "text": "now on my knees gazing into the face of a daisy, now climbing again among the purple and azure flowers,"
+        }
       ]
     },
     {
@@ -145,8 +233,16 @@
       "image": "A small distant figure of a rugged 19th-century field naturalist in worn wool clothes seated on a rock in the Yosemite Sierra Nevada high country, gazing out over a vast painted vista of glaciated upper Tuolumne basin, an open journal beside him, Studio Ghibli watercolor style",
       "motion": "very slow camera drift past the figure, the painted Tuolumne basin visible behind",
       "beats": [
-        { "id": "32.1", "sec": 9, "text": "now down into the treasuries of the snow, or gazing afar over domes and peaks, lakes and woods," },
-        { "id": "32.2", "sec": 9, "text": "and the billowy glaciated fields of the upper Tuolumne, and trying to sketch them." }
+        {
+          "id": "32.1",
+          "sec": 9,
+          "text": "now down into the treasuries of the snow, or gazing afar over domes and peaks, lakes and woods,"
+        },
+        {
+          "id": "32.2",
+          "sec": 9,
+          "text": "and the billowy glaciated fields of the upper Tuolumne, and trying to sketch them."
+        }
       ]
     },
     {
@@ -156,8 +252,16 @@
       "image": "A small distant figure of a rugged 19th-century field naturalist on the summit of Mount Hoffman in Yosemite, body luminous with reflected light, soft Studio Ghibli clouds parting around him, ethereal connection to the Sierra Nevada landscape",
       "motion": "very slow drift of soft clouds around the figure",
       "beats": [
-        { "id": "33.1", "sec": 8, "text": "In the midst of such beauty, pierced with its rays, one's body is all one tingling palate." },
-        { "id": "33.2", "sec": 7, "text": "Who wouldn't be a mountaineer! Up here all the world's prizes seem nothing." }
+        {
+          "id": "33.1",
+          "sec": 8,
+          "text": "In the midst of such beauty, pierced with its rays, one's body is all one tingling palate."
+        },
+        {
+          "id": "33.2",
+          "sec": 7,
+          "text": "Who wouldn't be a mountaineer! Up here all the world's prizes seem nothing."
+        }
       ]
     },
     {
@@ -167,8 +271,16 @@
       "image": "Lake Tenaya seen from above in Yosemite—a long mirror lake with imposing mountain dipping its feet into it on the south side, Cathedral Peak in the distance, smooth Sierra Nevada granite domes around, Studio Ghibli watercolor style",
       "motion": "very slow aerial drift over Lake Tenaya",
       "beats": [
-        { "id": "34.1", "sec": 9, "text": "The largest of the many glacier lakes in sight is Tenaya, about a mile long," },
-        { "id": "34.2", "sec": 9, "text": "with an imposing mountain dipping its feet into it on the south side, Cathedral Peak a few miles above its head." }
+        {
+          "id": "34.1",
+          "sec": 9,
+          "text": "The largest of the many glacier lakes in sight is Tenaya, about a mile long,"
+        },
+        {
+          "id": "34.2",
+          "sec": 9,
+          "text": "with an imposing mountain dipping its feet into it on the south side, Cathedral Peak a few miles above its head."
+        }
       ]
     },
     {
@@ -178,8 +290,16 @@
       "image": "Lake Hoffman shimmering at the foot of Mount Hoffman in Yosemite, mountain pines around its rim, glittering surface, Sierra Nevada peaks in soft distance, Studio Ghibli watercolor style",
       "motion": "very slow camera drift over Lake Hoffman",
       "beats": [
-        { "id": "35.1", "sec": 9, "text": "Lake Hoffman lies shimmering beneath my feet, mountain pines around its shining rim." },
-        { "id": "35.2", "sec": 8, "text": "To the northward the picturesque basin of Yosemite Creek glitters with lakelets and pools." }
+        {
+          "id": "35.1",
+          "sec": 9,
+          "text": "Lake Hoffman lies shimmering beneath my feet, mountain pines around its shining rim."
+        },
+        {
+          "id": "35.2",
+          "sec": 8,
+          "text": "To the northward the picturesque basin of Yosemite Creek glitters with lakelets and pools."
+        }
       ]
     },
     {
@@ -189,8 +309,16 @@
       "image": "Distant snowy Sierra Nevada peaks robed in light in the Yosemite high country, fountain-heads of rivers, dramatic backlit ridge against sky, Studio Ghibli watercolor style",
       "motion": "very slow rightward drift of clouds across the snowy peaks",
       "beats": [
-        { "id": "36.1", "sec": 9, "text": "But the eye is soon drawn away from these bright mirror wells, however attractive," },
-        { "id": "36.2", "sec": 9, "text": "to revel in the glorious congregation of peaks on the axis of the range in their robes of snow and light." }
+        {
+          "id": "36.1",
+          "sec": 9,
+          "text": "But the eye is soon drawn away from these bright mirror wells, however attractive,"
+        },
+        {
+          "id": "36.2",
+          "sec": 9,
+          "text": "to revel in the glorious congregation of peaks on the axis of the range in their robes of snow and light."
+        }
       ]
     },
     {
@@ -200,8 +328,16 @@
       "image": "A painterly scene of a large St. Bernard dog (Carlo) and a small woodchuck on a rocky meadow in the Yosemite Sierra Nevada high country, brief moment of nature's harshness, Studio Ghibli watercolor style",
       "motion": "very slow camera drift past Carlo and the woodchuck",
       "beats": [
-        { "id": "37.1", "sec": 9, "text": "Carlo caught an unfortunate woodchuck when it was running from a grassy spot to its boulder-pile home—" },
-        { "id": "37.2", "sec": 9, "text": "one of the hardiest of the mountain animals. I tried hard to save him, but in vain." }
+        {
+          "id": "37.1",
+          "sec": 9,
+          "text": "Carlo caught an unfortunate woodchuck when it was running from a grassy spot to its boulder-pile home—"
+        },
+        {
+          "id": "37.2",
+          "sec": 9,
+          "text": "one of the hardiest of the mountain animals. I tried hard to save him, but in vain."
+        }
       ]
     },
     {
@@ -211,9 +347,21 @@
       "image": "A small round-eared pika atop a tumble of Sierra Nevada granite boulders in the Yosemite high country, bundles of drying lupine and grass on flat stones around it, Studio Ghibli watercolor style",
       "motion": "very slow camera drift toward the pika perched on the boulder",
       "beats": [
-        { "id": "38.1", "sec": 9, "text": "After telling Carlo to be careful, I caught sight, for the first time, of the curious pika," },
-        { "id": "38.2", "sec": 9, "text": "or little chief hare, that cuts large quantities of lupines and lays them out to dry in the sun for hay," },
-        { "id": "38.3", "sec": 8, "text": "which it stores in underground barns to last through the long, snowy winter." }
+        {
+          "id": "38.1",
+          "sec": 9,
+          "text": "After telling Carlo to be careful, I caught sight, for the first time, of the curious pika,"
+        },
+        {
+          "id": "38.2",
+          "sec": 9,
+          "text": "or little chief hare, that cuts large quantities of lupines and lays them out to dry in the sun for hay,"
+        },
+        {
+          "id": "38.3",
+          "sec": 8,
+          "text": "which it stores in underground barns to last through the long, snowy winter."
+        }
       ]
     },
     {
@@ -223,9 +371,21 @@
       "image": "A pika carrying lupine in mouth across stone slabs in the Yosemite Sierra Nevada high country, small bundles of drying grass scattered nearby, late afternoon light, Studio Ghibli watercolor style",
       "motion": "very slow camera drift across the stone slabs as the pika moves between rocks",
       "beats": [
-        { "id": "39.1", "sec": 9, "text": "Coming upon these plants freshly cut and lying in handfuls here and there on the rocks" },
-        { "id": "39.2", "sec": 9, "text": "has a startling effect of busy life on the lonely mountain-top." },
-        { "id": "39.3", "sec": 9, "text": "These little haymakers, endowed with brain-stuff something like our own—what lessons they teach." }
+        {
+          "id": "39.1",
+          "sec": 9,
+          "text": "Coming upon these plants freshly cut and lying in handfuls here and there on the rocks"
+        },
+        {
+          "id": "39.2",
+          "sec": 9,
+          "text": "has a startling effect of busy life on the lonely mountain-top."
+        },
+        {
+          "id": "39.3",
+          "sec": 9,
+          "text": "These little haymakers, endowed with brain-stuff something like our own—what lessons they teach."
+        }
       ]
     },
     {
@@ -235,8 +395,16 @@
       "image": "Golden eagle silhouette riding thermals above a massive Sierra Nevada granite cliff face in Yosemite, painterly Studio Ghibli clouds behind, soft afternoon light",
       "motion": "very slow soaring glide of the eagle, wings barely moving",
       "beats": [
-        { "id": "40.1", "sec": 9, "text": "An eagle soaring above a sheer cliff, where I suppose its nest is," },
-        { "id": "40.2", "sec": 9, "text": "makes another striking show of life, and helps to bring to mind the other people of the so-called solitude." }
+        {
+          "id": "40.1",
+          "sec": 9,
+          "text": "An eagle soaring above a sheer cliff, where I suppose its nest is,"
+        },
+        {
+          "id": "40.2",
+          "sec": 9,
+          "text": "makes another striking show of life, and helps to bring to mind the other people of the so-called solitude."
+        }
       ]
     }
   ]
