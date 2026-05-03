@@ -68,7 +68,8 @@ describe('checkClipFeasibility', () => {
     };
     const report = checkClipFeasibility(spec, pickProvider);
     expect(report.ok).toBe(false);
-    expect(report.issues[0]).toMatchObject({ provider: 'kling', totalSec: 18, overSec: 3 });
+    // kling v2.5-turbo max = 10s (was 15s on v3/pro): 18s - 10s = 8s over.
+    expect(report.issues[0]).toMatchObject({ provider: 'kling', totalSec: 18, overSec: 8 });
   });
 
   it('flags multiple bad scenes, leaves good ones alone (mixed router)', () => {
@@ -103,8 +104,10 @@ describe('checkClipFeasibility', () => {
     expect(report.issues.map((i) => i.sceneN)).toEqual([2, 4]);
   });
 
-  it('default kling-only router accepts ≤15s scenes that veo would reject', () => {
-    // 14s HERO scene fits kling (max 15) but would have failed veo (max 8).
+  it('default kling-only router accepts ≤10s scenes that veo would reject', () => {
+    // 9s HERO scene fits kling v2.5-turbo (max 10) but would have failed veo
+    // (max 8). Was 14s on v3/pro (max 15); tightened to 9s after the v2.5
+    // switch since turbo only supports 5s and 10s clips.
     const spec: ChapterSpec = {
       ...validChapterSpec,
       scenes: [
@@ -113,8 +116,8 @@ describe('checkClipFeasibility', () => {
           n: 1,
           type: 'HERO',
           beats: [
-            { ...validBeat, id: '1.1', sec: 8 },
-            { ...validBeat, id: '1.2', sec: 6 },
+            { ...validBeat, id: '1.1', sec: 5 },
+            { ...validBeat, id: '1.2', sec: 4 },
           ],
         },
       ],

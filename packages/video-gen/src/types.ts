@@ -77,8 +77,9 @@ export interface VideoProviderConfig {
   /**
    * Translate the orchestrator's neutral request shape into the body fields
    * the provider's API actually expects. fal.ai providers diverge on field
-   * names (Kling wants `start_image_url`, others want `image_url`) and on
-   * duration encoding (Veo wants `"6s"`, Kling/Seedance want `"6"`).
+   * names (Kling v2.5-turbo and others want `image_url`; Kling v3/pro
+   * wanted `start_image_url`) and on duration encoding (Veo wants `"6s"`,
+   * Kling/Seedance want `"6"`; Kling v2.5-turbo accepts only `"5"` or `"10"`).
    *
    * Defaults to `{ image_url, prompt, duration: durationSec }` if omitted.
    */
