@@ -45,9 +45,17 @@ Usage:
   wcap render   <spec.json> [opts]    Render the chapter to MP4 (TODO)
 
 Render options:
-  --max-cost N      Refuse to proceed if estimate exceeds $N (default 50)
-  --confirm         Skip the interactive confirmation
-  --output PATH     Output path (default: output/<slug>.mp4)
+  --max-cost N            Refuse to proceed if estimate exceeds $N (default 50)
+  --confirm               Skip the interactive confirmation
+  --output PATH           Output path (default: output/<slug>.mp4)
+  --cache-dir DIR         Cache directory (default: cache)
+  --xfade-sec N           Crossfade between scenes (default 1.5; ignored with --per-scene-output)
+  --per-scene-output DIR  Emit one MP4 per scene to DIR instead of a single
+                          concatenated master MP4. Forces xfade=0 and skips the
+                          +1.5s clip padding (saves ~$14/chapter at v2.5-turbo).
+                          Filenames: {slug}-scene-{NNN}.mp4 — 3-digit padded so
+                          they sort correctly when imported into iMovie /
+                          DaVinci / Final Cut. Add transitions in your editor.
 `.trim();
 
 /**
@@ -140,13 +148,14 @@ async function runRenderCommand(
       output: { type: 'string' },
       'cache-dir': { type: 'string' },
       'xfade-sec': { type: 'string' },
+      'per-scene-output': { type: 'string' },
     },
     allowPositionals: true,
   });
   const path = positionals[0];
   if (path === undefined) {
     logger.error(
-      'usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH] [--cache-dir DIR] [--xfade-sec N]',
+      'usage: wcap render <spec.json> [--max-cost N] [--confirm] [--output PATH] [--cache-dir DIR] [--xfade-sec N] [--per-scene-output DIR]',
     );
     return 1;
   }
@@ -172,6 +181,7 @@ async function runRenderCommand(
   const maxCostUsd = Number(values['max-cost'] ?? '50');
   const confirm = values.confirm ?? false;
   const xfadeSec = values['xfade-sec'] !== undefined ? Number(values['xfade-sec']) : undefined;
+  const perSceneOutputDir = values['per-scene-output'];
 
   const result = await runRender(
     spec,
@@ -244,11 +254,22 @@ async function runRenderCommand(
       },
       logger,
     },
-    { outputPath, maxCostUsd, confirm, ...(xfadeSec !== undefined ? { xfadeSec } : {}) },
+    {
+      outputPath,
+      maxCostUsd,
+      confirm,
+      ...(xfadeSec !== undefined ? { xfadeSec } : {}),
+      ...(perSceneOutputDir !== undefined ? { perSceneOutputDir } : {}),
+    },
   );
 
   logger.log(`Cost: $${result.cost.totalUsd.toFixed(2)}`);
-  logger.log(`Output: ${result.outputPath}`);
+  if (result.perSceneOutputPaths.length > 0) {
+    logger.log(`Per-scene outputs (${result.perSceneOutputPaths.length.toString()}):`);
+    for (const p of result.perSceneOutputPaths) logger.log(`  ${p}`);
+  } else {
+    logger.log(`Output: ${result.outputPath}`);
+  }
   return 0;
 }
 

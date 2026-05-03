@@ -74,7 +74,7 @@ describe('createVideoClient.generate', () => {
     expect(capturedUrl).toContain('fal-ai/veo3');
   });
 
-  it('encodes Uint8Array image as data URL in the body (kling uses start_image_url)', async () => {
+  it('encodes Uint8Array image as data URL in the body (kling v2.5-turbo uses image_url)', async () => {
     let capturedBody: Record<string, unknown> = {};
     const fetchImpl: typeof fetch = async (_url, init) => {
       if (init?.method === 'POST') {
@@ -90,7 +90,7 @@ describe('createVideoClient.generate', () => {
     });
     const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
     await client.generate({ image: png, motion: 'm' });
-    expect(capturedBody.start_image_url).toMatch(/^data:image\/png;base64,/);
+    expect(capturedBody.image_url).toMatch(/^data:image\/png;base64,/);
   });
 
   it('formats per-provider request body shape', async () => {
@@ -108,10 +108,10 @@ describe('createVideoClient.generate', () => {
       fetch: fetchImpl,
     });
 
-    // kling: start_image_url + duration as stringified integer
+    // kling v2.5-turbo: image_url + duration quantized to "5" or "10"
     await client.generate({ image: 'https://i', motion: 'm', provider: 'kling', durationSec: 7 });
-    expect(body.start_image_url).toBe('https://i');
-    expect(body.duration).toBe('7');
+    expect(body.image_url).toBe('https://i');
+    expect(body.duration).toBe('10');
 
     // seedance: image_url + duration as stringified integer
     await client.generate({
