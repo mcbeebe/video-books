@@ -124,7 +124,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
 
     // ffprobe verification:
     expect(recorded.ffprobePaths).toEqual([outputPath]);
-    expect(result.verify.ok).toBe(true);
+    expect(result.verify?.ok).toBe(true);
   });
 
   it('refuses to render when cost exceeds maxCostUsd without --confirm', async () => {
@@ -159,7 +159,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
       confirm: true,
       xfadeSec: 0,
     });
-    expect(result.verify.ok).toBe(true);
+    expect(result.verify?.ok).toBe(true);
   });
 
   it('throws when ffmpeg returns non-zero', async () => {
@@ -252,7 +252,7 @@ describe('runRender (e2e wiring with mock providers)', () => {
 
     const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls.map((c) => (c[0] as { durationSec: number }).durationSec)).toEqual([16, 9, 16]);
-    expect(result.verify.ok).toBe(true);
+    expect(result.verify?.ok).toBe(true);
   });
 
   it('expectedOutputSec uses min(video stream, audio stream) so audio-shorter renders verify', async () => {
@@ -270,6 +270,47 @@ describe('runRender (e2e wiring with mock providers)', () => {
       confirm: false,
     });
 
-    expect(result.verify.ok).toBe(true);
+    expect(result.verify?.ok).toBe(true);
+  });
+
+  it('per-scene output: emits one ffmpeg invocation per scene with sortable filenames', async () => {
+    const spec = await parseChapterFile(FIXTURE_PATH);
+    const recorded = { ffmpegArgs: [] as string[][], ffprobePaths: [] as string[] };
+    const expectedSec = spec.scenes.reduce(
+      (s, sc) => s + sc.beats.reduce((b, beat) => b + beat.sec, 0),
+      0,
+    );
+    const deps = makeDeps(dir, expectedSec, recorded);
+    const perSceneOutputDir = join(dir, 'per-scene');
+
+    const result = await runRender(spec, deps, {
+      outputPath: join(dir, 'unused.mp4'),
+      maxCostUsd: 100,
+      confirm: false,
+      perSceneOutputDir,
+    });
+
+    // One ffmpeg call per scene (no master concat pass):
+    expect(recorded.ffmpegArgs).toHaveLength(spec.scenes.length);
+    // ffprobe is NOT called in per-scene mode (no master to verify):
+    expect(recorded.ffprobePaths).toEqual([]);
+    expect(result.verify).toBeNull();
+
+    // Per-scene paths use 3-digit zero-padded scene numbers and the spec slug:
+    expect(result.perSceneOutputPaths).toHaveLength(spec.scenes.length);
+    for (let i = 0; i < spec.scenes.length; i += 1) {
+      const scene = spec.scenes[i];
+      if (scene === undefined) continue;
+      const expectedFilename = `${spec.slug}-scene-${scene.n.toString().padStart(3, '0')}.mp4`;
+      expect(result.perSceneOutputPaths[i]).toBe(join(perSceneOutputDir, expectedFilename));
+    }
+
+    // Without padding, clips are sized to ceil(authored_sec) — no +1.5s tail:
+    const calls = (deps.videoClient.generate as ReturnType<typeof vi.fn>).mock.calls;
+    const requestedSecs = calls.map((c) => (c[0] as { durationSec: number }).durationSec);
+    const authoredSecsPerScene = spec.scenes.map((s) =>
+      Math.ceil(s.beats.reduce((b, beat) => b + beat.sec, 0)),
+    );
+    expect(requestedSecs).toEqual(authoredSecsPerScene);
   });
 });
