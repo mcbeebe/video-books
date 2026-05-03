@@ -1,0 +1,175 @@
+{
+  "slug": "03-muir-ch6-scenes-11-19",
+  "title": "Mount Hoffman and Lake Tenaya — Scenes 11-19 (chunk 3)",
+  "source": "https://www.gutenberg.org/ebooks/32540",
+  "styleAnchor": "content/style-anchors/chapter-6-locked.txt",
+  "output": { "width": 1920, "height": 1080, "fps": 30 },
+  "scenes": [
+    {
+      "n": 11,
+      "type": "SCENE",
+      "day": "July 26 — southern slope of Mount Hoffman",
+      "image": "Wide gently-graded southern slope of Mount Hoffman in Yosemite, narrow slot-like gorges cutting across the summit at right angles, soft afternoon light, Sierra Nevada high country, Studio Ghibli watercolor style",
+      "motion": "very slow drift along the southern slope of the mountain",
+      "beats": [
+        {
+          "id": "11.1",
+          "sec": 8,
+          "text": "The southern slopes are much more gradual and accessible."
+        },
+        {
+          "id": "11.2",
+          "sec": 9,
+          "text": "Narrow slot-like gorges extend across the summit at right angles, formed by the erosion of less resisting beds."
+        }
+      ]
+    },
+    {
+      "n": 12,
+      "type": "SCENE",
+      "day": "July 26 — summit plateau, barren in distance",
+      "image": "Wide gray summit plateau of Mount Hoffman in Yosemite seen from low angle, vast and apparently barren but textured with tiny plants, soft sky filling the top half of the frame, Sierra Nevada high country, Studio Ghibli watercolor style",
+      "motion": "very slow camera lowering toward the ground, revealing the texture of plants",
+      "beats": [
+        {
+          "id": "12.1",
+          "sec": 9,
+          "text": "The broad gray summit is barren and desolate-looking in general views, wasted by ages of gnawing storms—"
+        },
+        {
+          "id": "12.2",
+          "sec": 9,
+          "text": "but looking at the surface in detail, one finds it covered by thousands and millions of charming plants"
+        }
+      ]
+    },
+    {
+      "n": 13,
+      "type": "SCENE",
+      "day": "July 26 — alpine wildflowers, macro detail",
+      "image": "Macro view of tiny alpine wildflowers nestled in pebble-strewn ground in the Yosemite high country, leaves and blooms so small they form no mass of color, soft natural light, Studio Ghibli watercolor style",
+      "motion": "very slow camera push-in toward the cluster of tiny wildflowers",
+      "beats": [
+        {
+          "id": "13.1",
+          "sec": 9,
+          "text": "with leaves and flowers so small they form no mass of color visible at a distance of a few hundred yards."
+        }
+      ]
+    },
+    {
+      "n": 14,
+      "type": "HERO",
+      "day": "July 26 — beds of azure daisies",
+      "image": "Macro view of pale azure alpine daisies clustered in a wet rock hollow in the Yosemite high country, dewdrops on petals catching morning light, soft and luminous, Studio Ghibli watercolor style",
+      "motion": "very slow downward camera tilt over the bed of azure daisies, dewdrops catching morning light",
+      "beats": [
+        {
+          "id": "14.1",
+          "sec": 9,
+          "text": "Beds of azure daisies smile confidingly in moist hollows,"
+        },
+        {
+          "id": "14.2",
+          "sec": 9,
+          "text": "and along the banks of small rills with several species of eriogonum,"
+        }
+      ]
+    },
+    {
+      "n": 15,
+      "type": "SCENE",
+      "day": "July 26 — streamlet edged with wildflowers",
+      "image": "Tiny mountain streamlet in the Yosemite Sierra Nevada high country, edged with diverse delicate alpine wildflowers in pinks, yellows, and purples, soft natural light, Studio Ghibli watercolor style",
+      "motion": "very slow camera drift along the streamlet",
+      "beats": [
+        {
+          "id": "15.1",
+          "sec": 8,
+          "text": "silky-leaved ivesia, pentstemon, orthocarpus, and patches of Primula suffruticosa, a beautiful shrubby species."
+        }
+      ]
+    },
+    {
+      "n": 16,
+      "type": "SCENE",
+      "day": "July 26 — bryanthus heathwort",
+      "image": "Cluster of bryanthus heathwort with deep purple flowers and dark green needle-like foliage on a rocky Sierra Nevada slope in the Yosemite high country, soft afternoon light, Studio Ghibli watercolor style",
+      "motion": "very slow gentle breeze drifting through the bryanthus foliage",
+      "beats": [
+        {
+          "id": "16.1",
+          "sec": 8,
+          "text": "Here also I found bryanthus, a charming heathwort covered with purple flowers and dark green foliage like heather,"
+        },
+        {
+          "id": "16.2",
+          "sec": 7,
+          "text": "and three trees new to me—a hemlock and two pines."
+        }
+      ]
+    },
+    {
+      "n": 17,
+      "type": "HERO",
+      "day": "July 26 — Mountain Hemlock, Tsuga Mertensiana",
+      "image": "A graceful mountain hemlock tree (Tsuga Mertensiana) with gracefully drooping branches against soft Yosemite Sierra Nevada sky, painterly evergreen needles, last season's brown cones still clinging to the drooping sprays, Studio Ghibli watercolor style",
+      "motion": "very slow drift of the drooping hemlock branches in a gentle breeze",
+      "beats": [
+        {
+          "id": "17.1",
+          "sec": 8,
+          "text": "The hemlock—Tsuga Mertensiana—is the most beautiful conifer I have ever seen;"
+        },
+        {
+          "id": "17.2",
+          "sec": 9,
+          "text": "the branches and also the main axis droop in a singularly graceful way,"
+        },
+        {
+          "id": "17.3",
+          "sec": 9,
+          "text": "and the dense foliage covers the delicate, sensitive, swaying branchlets all around."
+        }
+      ]
+    },
+    {
+      "n": 18,
+      "type": "SCENE",
+      "day": "July 26 — hemlock branchlet in bloom",
+      "image": "Close-up of a hemlock branchlet covered in last season's brown cones and new purple-blue staminate flowers, in the Yosemite Sierra Nevada high country, soft dappled light, Studio Ghibli watercolor style",
+      "motion": "very slow camera drift across the hemlock branchlet",
+      "beats": [
+        {
+          "id": "18.1",
+          "sec": 9,
+          "text": "It is now in full bloom, and the flowers, together with thousands of last season's cones still clinging to the drooping sprays,"
+        },
+        {
+          "id": "18.2",
+          "sec": 8,
+          "text": "display wonderful wealth of color—brown and purple and blue."
+        }
+      ]
+    },
+    {
+      "n": 19,
+      "type": "HERO",
+      "day": "July 26 — climbing up into the hemlock",
+      "image": "Looking up through a hemlock canopy from below in the Yosemite Sierra Nevada high country, soft light filtering through purple-flowered branches, the canopy filling most of the frame, Studio Ghibli watercolor style; small distant figure of a rugged 19th-century field naturalist barely visible at the bottom of frame, climbing up into the tree",
+      "motion": "very slow upward camera movement through the hemlock branches",
+      "beats": [
+        {
+          "id": "19.1",
+          "sec": 8,
+          "text": "Gladly I climbed the first tree I found to revel in the midst of it."
+        },
+        {
+          "id": "19.2",
+          "sec": 7,
+          "text": "How the touch of the flowers makes one's flesh tingle!"
+        }
+      ]
+    }
+  ]
+}
